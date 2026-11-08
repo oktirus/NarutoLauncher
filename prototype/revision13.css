@@ -1,0 +1,15 @@
+/* Keep scene descriptions off the three corrected storytelling props. */
+body:is([data-scene=sai],[data-scene=jiraiya],[data-scene=minato]) .scene-caption{right:42%;width:200px}
+@media(max-width:560px){
+ body:is([data-scene=sai],[data-scene=jiraiya],[data-scene=minato]) .hero-copy h1{font-size:60px;margin-bottom:18px}
+ body:is([data-scene=sai],[data-scene=jiraiya],[data-scene=minato]) .topbar{text-shadow:0 1px 4px #071c27,0 0 8px #071c27}
+ body:is([data-scene=sai],[data-scene=jiraiya],[data-scene=minato]) .hero-actions .ghost-button{position:absolute;left:0;bottom:10px}
+}
+@media(min-width:901px) and (max-height:620px){
+ body:is([data-scene=sai],[data-scene=jiraiya],[data-scene=minato]) .backdrop{transform:translate3d(calc(var(--px)*.35px),clamp(-3vh,calc(var(--py)*.35px - 18px),-2.8vh),0) scale(1.08)}
+ body:is([data-scene=sai],[data-scene=jiraiya],[data-scene=minato]) .section-heading{justify-content:flex-start;gap:26px}
+ body:is([data-scene=sai],[data-scene=jiraiya],[data-scene=minato]) .audio-invitation{margin-left:10px;margin-right:auto;background:#071c27ed;box-shadow:0 0 0 3px #071c27ed;text-shadow:0 1px 3px #000}
+ body:is([data-scene=sai],[data-scene=jiraiya],[data-scene=minato]) .topbar{text-shadow:0 1px 4px #071c27,0 0 8px #071c27}
+ body:is([data-scene=sai],[data-scene=jiraiya],[data-scene=minato]) #audio-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+ body:is([data-scene=sai],[data-scene=jiraiya],[data-scene=minato]) .audio-invitation::after{content:'Атмосфера'}
+}

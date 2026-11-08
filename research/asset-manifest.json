@@ -1,0 +1,155 @@
+[
+  {
+    "source": "assets/generated/archive.png",
+    "runtime": "assets/runtime/archive.webp",
+    "source_sha256": "119689961ca0c54ad7b50d7b40642a94537933f35b0cfa876321a5d572380ee6",
+    "runtime_sha256": "b40b6f03b2042550d6e6a404aad0698e75c056163712c0421619049e78018e6e",
+    "width": 640,
+    "height": 640,
+    "alpha": true
+  },
+  {
+    "source": "assets/generated/crunchyroll.png",
+    "runtime": "assets/runtime/crunchyroll.webp",
+    "source_sha256": "0de42a9374219b107832be79cf9b316f3523f22d37345184564f8420d6a19634",
+    "runtime_sha256": "96962e99baef78540f86b9ca20264bc44ef7bad60fe45e570bbe393e1417bfb3",
+    "width": 640,
+    "height": 640,
+    "alpha": true
+  },
+  {
+    "source": "assets/generated/kodi.png",
+    "runtime": "assets/runtime/kodi.webp",
+    "source_sha256": "ce0a3f7c8b784a7c8ff0b2bf19a6ac7356a3cf8082d2be3ab44598a340394c68",
+    "runtime_sha256": "76c2953469f72473a278579900cbd0e39454f1a9d058aa5290e05d08d5bc4aa5",
+    "width": 640,
+    "height": 640,
+    "alpha": true
+  },
+  {
+    "source": "assets/generated/konoha-dawn.png",
+    "runtime": "assets/runtime/konoha-dawn.jpg",
+    "source_sha256": "42a138345869637e642cd1f0b05b224136071f2b82a3fad64e587fb87a84a191",
+    "runtime_sha256": "d8f3e5c8870931dc1b8a35387a720936dd994ed44c0e71d18f6a592c4001790d",
+    "width": 1672,
+    "height": 941,
+    "alpha": false
+  },
+  {
+    "source": "assets/generated/konoha-dusk.png",
+    "runtime": "assets/runtime/konoha-dusk.jpg",
+    "source_sha256": "1f5a0fcd0f41d7bb3d8581be1269bdc92a81bcb06b6b4eaff68fc341cc625ff4",
+    "runtime_sha256": "a19a3dd5bf989fda5acfab08aa249738e68d6ce1043ff9e534a9b19dc9b5df53",
+    "width": 1672,
+    "height": 941,
+    "alpha": false
+  },
+  {
+    "source": "assets/generated/konoha-gaara.png",
+    "runtime": "assets/runtime/konoha-gaara.jpg",
+    "source_sha256": "1daff7a7849b935e9db16f2e7f8db21cf9a86f67b9e0f01d69c465bde4c89bb9",
+    "runtime_sha256": "f5ac1faf717feff11dd53a57f83465bf72e2a4ed692cbd79758747eacc0dab7f",
+    "width": 1672,
+    "height": 941,
+    "alpha": false
+  },
+  {
+    "source": "assets/generated/konoha-kakashi.png",
+    "runtime": "assets/runtime/konoha-kakashi.jpg",
+    "source_sha256": "518a0e41728ad972a8ef06adc85eafc03429ab7067c98be66a9a96a73c592d05",
+    "runtime_sha256": "5eedcfdb5b56d9088628251ec87db936966cda21c2316ce156e45aa42f071054",
+    "width": 1672,
+    "height": 941,
+    "alpha": false
+  },
+  {
+    "source": "assets/generated/konoha-night.png",
+    "runtime": "assets/runtime/konoha-night.jpg",
+    "source_sha256": "ce201b2d9fa3596ff8fce6c2c834b1f6ab23b41c04bd41703e8f60ea9ff517fd",
+    "runtime_sha256": "8fdf47b2444125184abad85f06eec89274e32d6f1a65e653a03be25856df8c9e",
+    "width": 1672,
+    "height": 941,
+    "alpha": false
+  },
+  {
+    "source": "assets/generated/konoha-sakura.png",
+    "runtime": "assets/runtime/konoha-sakura.jpg",
+    "source_sha256": "1d462b613662d05067f861178e38b8a6527f0a0e722475eea5ccbd8d6256a742",
+    "runtime_sha256": "0814fd2c83618e138f0838449c9076cc7f46d2762e1bc165ac584e7d5df91bf3",
+    "width": 1672,
+    "height": 941,
+    "alpha": false
+  },
+  {
+    "source": "assets/generated/konoha-sasuke.png",
+    "runtime": "assets/runtime/konoha-sasuke.jpg",
+    "source_sha256": "fbaf425d046b3186a0876dd4a0fa77778b42d7735a3aa6aebc52c487c9ef1159",
+    "runtime_sha256": "c5f4e044bc50abf3108c30adf722beae6d9ad5eeca67143dc6969bc0ce963634",
+    "width": 1672,
+    "height": 941,
+    "alpha": false
+  },
+  {
+    "source": "assets/generated/lampa.png",
+    "runtime": "assets/runtime/lampa.webp",
+    "source_sha256": "4b3675b74a8bc788ecdf80ef84e4e038896ca3ece038c4b0184ef8f0f7ce1f59",
+    "runtime_sha256": "90b1bfb600ec571cd2c8fa2779a89d3f48a1e4c2fc81bc60d65a0640212e23e1",
+    "width": 640,
+    "height": 640,
+    "alpha": true
+  },
+  {
+    "source": "assets/generated/netflix.png",
+    "runtime": "assets/runtime/netflix.webp",
+    "source_sha256": "08c6919c99c262bb4acead8cede26fab7dcf60fb85f860d0e9158121a25703f7",
+    "runtime_sha256": "f4b64554887d73dc146e4ffdb52a6976b3b43c63f69b6113c844b44456b18a85",
+    "width": 640,
+    "height": 640,
+    "alpha": true
+  },
+  {
+    "source": "assets/generated/plex.png",
+    "runtime": "assets/runtime/plex.webp",
+    "source_sha256": "08b5abbf9414e69c50263fe364e8fd8bde87d84b1bf9c88a53bcf11c0f0d5e3f",
+    "runtime_sha256": "8ebfe34c2f1e0c184bf19b197f616d23aea215d814486af1e6139c77d3aa041a",
+    "width": 640,
+    "height": 640,
+    "alpha": true
+  },
+  {
+    "source": "assets/generated/smarttube.png",
+    "runtime": "assets/runtime/smarttube.webp",
+    "source_sha256": "5a4abf92fb65bc8a1a2a6737e4f4b875000b6b4d23f758adc0adaab2b817aa7a",
+    "runtime_sha256": "e19ad0270ce4da8a7b29c3787c66658b566e54c899371b2930ad915163f5b967",
+    "width": 640,
+    "height": 640,
+    "alpha": true
+  },
+  {
+    "source": "assets/generated/spotify.png",
+    "runtime": "assets/runtime/spotify.webp",
+    "source_sha256": "6a7466eb7115bc3303f2b07af6a8bbb3363e07e355a442b7a51b61452823aa5b",
+    "runtime_sha256": "03e99de74a99757addc2237a8ff74723e2f97f5f49f9128c8e1ef7ef92b1fcb3",
+    "width": 640,
+    "height": 640,
+    "alpha": true
+  },
+  {
+    "source": "assets/generated/uakino.png",
+    "runtime": "assets/runtime/uakino.webp",
+    "source_sha256": "3fe5e28b88042d16bb5868d385a47538eb8236739add488fb98adbdc08b17b1e",
+    "runtime_sha256": "39fafa9d37ff9cc2cfe9a10ffb7382bdf2ee5cbeeb139e62e97a920eab4a2eff",
+    "width": 640,
+    "height": 640,
+    "alpha": true
+  },
+  {
+    "source": "assets/generated/vlc.png",
+    "runtime": "assets/runtime/vlc.webp",
+    "source_sha256": "a8755a52bea573e1c70aba72686b8bbf865ff1b5cfad49bdc9c9b23643c5ef12",
+    "runtime_sha256": "5c8624ab0d7e460b2bb0f3708755c7801f74b9ca03279724fba36be4bee8b3b5",
+    "width": 640,
+    "height": 640,
+    "alpha": true
+  }
+]

@@ -1,0 +1,26 @@
+{
+  "runId": "run_0fcadd38ae0d",
+  "workflow": "Orca orchestration",
+  "candidate": "reviews/candidate-hashes.json",
+  "independent_reviews": [
+    {
+      "agent": "claude",
+      "dispatchId": "ctx_ef5788a2c8e3",
+      "taskId": "task_b2b82c133c5b",
+      "surface": "structured",
+      "outcome": "succeeded",
+      "messageId": "msg_670365d8fa5c",
+      "report": "reviews/claude-review.md"
+    },
+    {
+      "agent": "antigravity",
+      "dispatchId": "ctx_66a41cf52057",
+      "taskId": "task_d9c0e1aba415",
+      "surface": "terminal",
+      "outcome": "succeeded",
+      "messageId": "msg_d3400b2d8d84",
+      "report": "reviews/antigravity-review.md"
+    }
+  ],
+  "post_review": "Coordinator implemented and locally verified fixes; agents did not re-review the final revision."
+}

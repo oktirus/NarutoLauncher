@@ -1,0 +1,10 @@
+960x540 sai initial:
+{"role":"button","name":"Увімкнути атмосферу","nameSources":[{"type":"attribute","attr":"aria-label","val":"Увімкнути атмосферу"},{"type":"contents","val":"Увімкнути атмосферу Атмосфера","superseded":true}],"props":"invalid=false,focusable=true,pressed=false","dom":{"w":960,"h":540,"attr":"Увімкнути атмосферу","pressedAttr":"false","visible":"\"Атмосфера\""}}
+✓ Done
+after click1:
+{"role":"button","name":"Вимкнути атмосферу","nameSources":[{"type":"attribute","attr":"aria-label","val":"Вимкнути атмосферу"},{"type":"contents","val":"Вимкнути атмосферу Атмосфера","superseded":true}],"props":"invalid=false,focusable=true,focused=true,pressed=true","dom":{"w":960,"h":540,"attr":"Вимкнути атмосферу","pressedAttr":"true","visible":"\"Атмосфера\""}}
+"{\"scene\":\"sai\",\"audio\":true,\"ambience\":false,\"volume\":0,\"musicVolume\":0,\"music\":\"1584791975\",\"technique\":\"rasengan\",\"highlightSound\":\"jutsu\",\"motion\":true,\"rotation\":0,\"idle\":0,\"pins\":[\"preview.smarttube\",\"preview.lampa\",\"preview.uakino\",\"preview.netflix\",\"preview.kodi\",\"preview.spotify\"]}"
+✓ Done
+after click2:
+{"role":"button","name":"Увімкнути атмосферу","nameSources":[{"type":"attribute","attr":"aria-label","val":"Увімкнути атмосферу"},{"type":"contents","val":"Увімкнути атмосферу Атмосфера","superseded":true}],"props":"invalid=false,focusable=true,focused=true,pressed=false","dom":{"w":960,"h":540,"attr":"Увімкнути атмосферу","pressedAttr":"false","visible":"\"Атмосфера\""}}
+  - button "Увімкнути атмосферу" [ref=e15]

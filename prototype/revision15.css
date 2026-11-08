@@ -1,0 +1,9 @@
+/* Sakura's new nursery scene: keep controls clear of the seedling and hands. */
+@media(max-width:560px){
+ body[data-scene=sakura] .hero-copy h1{font-size:60px;margin-bottom:18px}
+ body[data-scene=sakura] .hero-actions .ghost-button{position:absolute;left:0;bottom:10px}
+}
+@media(min-width:901px) and (max-height:620px){
+ body[data-scene=sakura] .audio-invitation{margin-left:0;margin-right:auto}
+ body[data-scene=sakura] .section-heading{justify-content:flex-start;gap:26px}
+}

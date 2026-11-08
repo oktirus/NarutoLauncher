@@ -1,0 +1,93 @@
+[
+  {
+    "id": "dusk",
+    "file": "assets/generated/konoha-dusk.png",
+    "prompt": "Cinematic premium Naruto anime launcher background, landscape 16:9, extremely detailed hand-painted cel animation background. The Hidden Leaf Village Konoha at blue-hour sunset, recognizable Hokage Rock monumental carved faces on mountain in upper center background, densely layered round timber rooftops, water tanks, Japanese tiled roofs, glowing small windows and warm paper lanterns, forest distant hills and towering ochre cumulus clouds, faded teal sky. Naruto Uzumaki recognizable as the young Shippuden hero with blond spiky hair, blue eyes, whisker marks, black forehead protector bearing Hidden Leaf symbol and orange/black jacket, seated on a rooftop ledge in RIGHT THIRD in profile gazing toward the village, wind in headband tails, expressive serene face. Sharp beautiful anime linework, elegant painterly background, film quality atmosphere, no photorealism. LEFT HALF intentionally quiet darker rooftops and sky with plenty of negative space for interface overlay. BOTTOM QUARTER dark rooftop silhouettes quiet for launcher dock. Warm burnt-orange #ef963d, dusk petrol #122e3b, parchment cream #f5e1ae, chakra cyan subtle. Very wide composition, immersive cinematic light rays, peaceful nostalgic determination. NO text, NO typography, NO logos, NO UI, NO collage, no panels.",
+    "source": "Built-in ImageGen",
+    "transparent": false
+  },
+  {
+    "id": "night",
+    "file": "assets/generated/konoha-night.png",
+    "prompt": "Edit the provided Konoha panorama into a moonlit night version for an animated scene transition. Preserve the EXACT camera, shapes, Naruto's face and position, village buildings, roof ledge, and the Hokage Rock faces. Only change time of day and lighting: indigo-blue moonlit sky with a few pale clouds and stars, subtle moonlight rim on Naruto's blond hair, glowing warm amber windows and paper lanterns, cool teal valley shadow. Beautiful richly detailed anime cel background. No text, no UI. Same 16:9 landscape composition.",
+    "source": "Built-in ImageGen",
+    "transparent": false
+  },
+  {
+    "id": "dawn",
+    "file": "assets/generated/konoha-dawn.png",
+    "prompt": "Edit the provided Konoha panorama into a fresh early morning sunrise version for an animated scene transition. Preserve the EXACT camera, shapes, Naruto's face and position, village buildings, roof ledge, and Hokage Rock faces. Only change time of day and lighting: pale turquoise and apricot morning sky, soft cream clouds, glowing low sunrise, mist drifting between rooftops, leafy green clarity, warm rim light on Naruto. Lanterns unlit. Beautiful richly detailed anime cel background. No text, no UI. Same 16:9 landscape composition.",
+    "source": "Built-in ImageGen",
+    "transparent": false
+  },
+  {
+    "id": "smarttube",
+    "file": "assets/generated/smarttube.png",
+    "prompt": "One single exquisitely illustrated premium Android TV app icon for a Naruto Konoha-themed launcher. Square composition, transparent background, isolated centered emblem with generous 12% clear padding, no square app background, no text, no letters except the requested emblem. Hand-inked cel anime artwork, textured tactile ninja equipment, crisp dark ink contours, warm parchment highlights, sunset orange and slate teal shadows, subtle blue chakra edge glow, beautiful sculpted 2D anime game inventory object. Richly detailed but strong clean silhouette at small sizes. Same coherent shinobi tool collection. Do not use existing flat app logos, no UI, no mockup, no grid. Subject: an opened small red-orange ninja scroll with dark wooden end caps, brass ties and a bold ivory triangular PLAY seal at center, tiny Hidden Leaf engraved fastener. This is the SmartTube/YouTube emblem reimagined as ninja gear.",
+    "source": "Built-in ImageGen",
+    "transparent": true
+  },
+  {
+    "id": "lampa",
+    "file": "assets/generated/lampa.png",
+    "prompt": "One single exquisitely illustrated premium Android TV app icon for a Naruto Konoha-themed launcher. Square composition, transparent background, isolated centered emblem with generous 12% clear padding, no square app background, no text, no letters except the requested emblem. Hand-inked cel anime artwork, textured tactile ninja equipment, crisp dark ink contours, warm parchment highlights, sunset orange and slate teal shadows, subtle blue chakra edge glow, beautiful sculpted 2D anime game inventory object. Richly detailed but strong clean silhouette at small sizes. Same coherent shinobi tool collection. Do not use existing flat app logos, no UI, no mockup, no grid. Subject: a beautiful glowing Japanese paper lantern, warm ivory ribbed paper, dark bamboo ribs, orange tassel and a tiny blue chakra flame glowing inside, leaf-shaped bronze hanging hook. Gentle warm bloom. This is the Lampa media app emblem.",
+    "source": "Built-in ImageGen",
+    "transparent": true
+  },
+  {
+    "id": "uakino",
+    "file": "assets/generated/uakino.png",
+    "prompt": "One single exquisitely illustrated premium Android TV app icon for a Naruto Konoha-themed launcher. Square composition, transparent background, isolated centered emblem with generous 12% clear padding, no square app background, no text, no letters except the requested emblem. Hand-inked cel anime artwork, textured tactile ninja equipment, crisp dark ink contours, warm parchment highlights, sunset orange and slate teal shadows, subtle blue chakra edge glow, beautiful sculpted 2D anime game inventory object. Richly detailed but strong clean silhouette at small sizes. Same coherent shinobi tool collection. Do not use existing flat app logos, no UI, no mockup, no grid. Subject: a compact shinobi cinema film reel made of dark steel, a curling parchment film strip with punched sprocket holes winds around it like a ninja scroll, small vivid blue and golden yellow cloth talismans tied to the reel, cinematic and elegant. This is the UAKino cinema app emblem.",
+    "source": "Built-in ImageGen",
+    "transparent": true
+  },
+  {
+    "id": "netflix",
+    "file": "assets/generated/netflix.png",
+    "prompt": "One single premium Naruto Konoha-themed Android TV application emblem. Transparent background, square centered composition, generous clear padding. Hand-inked cel anime artwork, tactile worn ninja equipment, crisp dark ink contours, parchment highlights, slate teal shadow, small blue chakra edge wisps. Strong clean silhouette at small size, same coherent illustrated shinobi tool collection, NOT an existing flat app logo on a background. No text, no UI, no grid. A single elegantly folded red cloth ribbon forming the unmistakable angular letter N, wound around a short dark wooden ninja scroll spindle, stitched silk, black ink shadows, bronze leaf clasp and a small hanging kunai. Rich crimson contrasting with parchment.",
+    "source": "Built-in ImageGen",
+    "transparent": true
+  },
+  {
+    "id": "kodi",
+    "file": "assets/generated/kodi.png",
+    "prompt": "One single premium Naruto Konoha-themed Android TV application emblem. Transparent background, square centered composition, generous clear padding. Hand-inked cel anime artwork, tactile worn ninja equipment, crisp dark ink contours, parchment highlights, slate teal shadow, small blue chakra edge wisps. Strong clean silhouette at small size, same coherent illustrated shinobi tool collection, NOT an existing flat app logo on a background. No text, no UI, no grid. A four-point blue steel ninja shuriken, angular luminous cyan center that subtly forms a geometric K-shaped cutout, brushed metal, wrapped dark teal handle details, tiny orange cord, minimal blue chakra aura. Recognizable diamond silhouette.",
+    "source": "Built-in ImageGen",
+    "transparent": true
+  },
+  {
+    "id": "spotify",
+    "file": "assets/generated/spotify.png",
+    "prompt": "One single premium Naruto Konoha-themed Android TV application emblem. Transparent background, square centered composition, generous clear padding. Hand-inked cel anime artwork, tactile worn ninja equipment, crisp dark ink contours, parchment highlights, slate teal shadow, small blue chakra edge wisps. Strong clean silhouette at small size, same coherent illustrated shinobi tool collection, NOT an existing flat app logo on a background. No text, no UI, no grid. A small wise jade-green ninja toad sitting on a little rolled parchment scroll, wearing a dark forehead protector with tiny engraved leaf mark. Three clear curving emerald sound-wave arcs hover above its head. Warm gold details, charming but sophisticated, beautifully inked.",
+    "source": "Built-in ImageGen",
+    "transparent": true
+  },
+  {
+    "id": "crunchyroll",
+    "file": "assets/generated/crunchyroll.png",
+    "prompt": "One single premium application emblem for a Naruto Konoha-themed Android TV launcher. Transparent background, square isolated centered emblem, generous padding. Exquisite hand-inked cel anime artwork, tactile shinobi equipment, crisp dark outlines, parchment highlights, slate teal shadow, restrained blue chakra edge wisps. Same coherent illustrated ninja gear collection. Strong readable silhouette, no UI, no grid, no text, NOT a flat existing logo. Subject: an orange-red fox-eye emblem formed from a curling carved wooden chakra ring, ivory inner eye with amber center, a small knotted red shinobi cord and brass leaf charm. Beautiful spiral eye silhouette associated with anime streaming.",
+    "source": "Built-in ImageGen",
+    "transparent": true
+  },
+  {
+    "id": "vlc",
+    "file": "assets/generated/vlc.png",
+    "prompt": "One single premium application emblem for a Naruto Konoha-themed Android TV launcher. Transparent background, square isolated centered emblem, generous padding. Exquisite hand-inked cel anime artwork, tactile shinobi equipment, crisp dark outlines, parchment highlights, slate teal shadow, restrained blue chakra edge wisps. Same coherent illustrated ninja gear collection. Strong readable silhouette, no UI, no grid, no text, NOT a flat existing logo. Subject: a charming orange and ivory striped conical shinobi straw hat resembling a media-player cone, dark lacquered brim, a little black band with bronze leaf clasp and hanging orange tassel, cinematic ninja inventory object.",
+    "source": "Built-in ImageGen",
+    "transparent": true
+  },
+  {
+    "id": "plex",
+    "file": "assets/generated/plex.png",
+    "prompt": "One single premium application emblem for a Naruto Konoha-themed Android TV launcher. Transparent background, square isolated centered emblem, generous padding. Exquisite hand-inked cel anime artwork, tactile shinobi equipment, crisp dark outlines, parchment highlights, slate teal shadow, restrained blue chakra edge wisps. Same coherent illustrated ninja gear collection. Strong readable silhouette, no UI, no grid, no text, NOT a flat existing logo. Subject: two elegant short golden kunai arranged into a bold right-pointing double-chevron, wrapped dark leather grips, orange cord, metallic parchment highlights, etched tiny leaf marks. Precise angular geometry and strong directional silhouette.",
+    "source": "Built-in ImageGen",
+    "transparent": true
+  },
+  {
+    "id": "archive",
+    "file": "assets/generated/archive.png",
+    "prompt": "One single premium application emblem for a Naruto Konoha-themed Android TV launcher. Transparent background, square isolated centered emblem, generous padding. Exquisite hand-inked cel anime artwork, tactile shinobi equipment, crisp dark outlines, parchment highlights, slate teal shadow, restrained blue chakra edge wisps. Same coherent illustrated ninja gear collection. Strong readable silhouette, no UI, no grid, no text, NOT a flat existing logo. Subject: an opened ivory parchment ninja archive scroll with dark wooden rollers at left and right, nine circular black ink summoning seals arranged in a clear three by three grid, orange binding cord and small brass leaf charm. No letters. This means all applications.",
+    "source": "Built-in ImageGen",
+    "transparent": true
+  }
+]

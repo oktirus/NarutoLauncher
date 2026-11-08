@@ -1,0 +1,37 @@
+[
+  {
+    "file": "assets/audio/chakra-focus.wav",
+    "duration": 0.18,
+    "sample_rate": 44100,
+    "sha256": "bce5739553a55ea27f7dc8c0a5787ab05ec07332225e23ef4903d6c63227bd9b",
+    "origin": "Original local procedural synthesis; not sampled from Naruto soundtrack or dialogue."
+  },
+  {
+    "file": "assets/audio/chakra-confirm.wav",
+    "duration": 0.65,
+    "sample_rate": 44100,
+    "sha256": "04eac4a0ae0147596ddead55b1e78d3c6644c1fa2d79f28d9a8954ca3ddd6ece",
+    "origin": "Original local procedural synthesis; not sampled from Naruto soundtrack or dialogue."
+  },
+  {
+    "file": "assets/audio/scroll-back.wav",
+    "duration": 0.24,
+    "sample_rate": 44100,
+    "sha256": "fe266c7f251ca4d4d447d7e65fc0304823c6955318dfe5da4ff32a860c4edad9",
+    "origin": "Original local procedural synthesis; not sampled from Naruto soundtrack or dialogue."
+  },
+  {
+    "file": "assets/audio/scene-wind.wav",
+    "duration": 1.2,
+    "sample_rate": 44100,
+    "sha256": "1c2887eb4cffae3fccc298a324c2f63f61ec8effdc821a690476869d2d058e29",
+    "origin": "Original local procedural synthesis; not sampled from Naruto soundtrack or dialogue."
+  },
+  {
+    "file": "assets/audio/konoha-air.wav",
+    "duration": 24,
+    "sample_rate": 44100,
+    "sha256": "ed86142a675cbb155d1e92bbfd9561050cdff049886f1a671cf64b32a3968bb3",
+    "origin": "Original local procedural synthesis; not sampled from Naruto soundtrack or dialogue."
+  }
+]

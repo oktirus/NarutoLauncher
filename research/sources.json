@@ -1,0 +1,101 @@
+[
+  {
+    "name": "naruto-official",
+    "url": "https://naruto-official.com/en",
+    "usage": "Local reference only; original copyright retained. Generated runtime assets are separate.",
+    "assets": [
+      {
+        "file": "research/references/naruto-official/01-NTOS_OG-main.png",
+        "url": "https://naruto-official.com/common/ogp/NTOS_OG-main.png",
+        "sha256": "26cc030e149666fa0b9a89373ad8021fb44cd4fd296535cb75a60e8f287d2d24",
+        "bytes": 1425162
+      },
+      {
+        "file": "research/references/naruto-official/04-x_icon_en.jpg",
+        "url": "https://naruto-official.com/index/section/x_icon_en.jpg",
+        "sha256": "dbe1c2e764f62a67a48039e02687c5f0ddbbc5755bfeda35dd7451144f3fa839",
+        "bytes": 44930
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "anime",
+    "url": "https://naruto-official.com/en/anime",
+    "usage": "Local reference only; original copyright retained. Generated runtime assets are separate.",
+    "assets": [
+      {
+        "file": "research/references/anime/01-NTOS_OG-main.png",
+        "url": "https://naruto-official.com/common/ogp/NTOS_OG-main.png",
+        "sha256": "26cc030e149666fa0b9a89373ad8021fb44cd4fd296535cb75a60e8f287d2d24",
+        "bytes": 1425162
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "rasengan",
+    "url": "https://naruto-official.com/en/special/rasengan",
+    "usage": "Local reference only; original copyright retained. Generated runtime assets are separate.",
+    "assets": [
+      {
+        "file": "research/references/rasengan/00-og-image-en.png",
+        "url": "https://naruto-official.com/en/special/rasengan/assets/ogp/og-image-en.png",
+        "sha256": "ef9311882d233798563471dadba2c332e4aee7bef84930c68ad3d4387f116407",
+        "bytes": 1220483
+      },
+      {
+        "file": "research/references/rasengan/01-2_kv.1qwidq-k12nhk.webp",
+        "url": "https://naruto-official.com/en/special/rasengan/_next/static/media/2_kv.1qwidq-k12nhk.webp",
+        "sha256": "de3b381de6482e6e2ca664a3392caf9f5b2e35daaa57fd2cc7cc0d565d3d39b7",
+        "bytes": 100590
+      },
+      {
+        "file": "research/references/rasengan/02-4_kv.2n80lkvpwv7pq.webp",
+        "url": "https://naruto-official.com/en/special/rasengan/_next/static/media/4_kv.2n80lkvpwv7pq.webp",
+        "sha256": "da669031198885ad51c221b2daaf7f678342298ceeb07e366e006340c508dc51",
+        "bytes": 41546
+      },
+      {
+        "file": "research/references/rasengan/04-1_movie.1d0h27ght76j5.jpg",
+        "url": "https://naruto-official.com/en/special/rasengan/_next/static/media/1_movie.1d0h27ght76j5.jpg",
+        "sha256": "2ba6c82b2ff5840103fb4af7048e66f707092717db69d6f4fadf87a29e0e8565",
+        "bytes": 143647
+      },
+      {
+        "file": "research/references/rasengan/05-2_movie.3aqw-d0d8impz.jpg",
+        "url": "https://naruto-official.com/en/special/rasengan/_next/static/media/2_movie.3aqw-d0d8impz.jpg",
+        "sha256": "91abf3636e9fa06cc9c7d202223490ff41ce6d0670fede224023d315cdbb4bde",
+        "bytes": 267039
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "chakra-database",
+    "url": "https://naruto-official.com/en/news/01_1802?nolangsuggestion=1",
+    "usage": "Local reference only; original copyright retained. Generated runtime assets are separate.",
+    "assets": [
+      {
+        "file": "research/references/chakra-database/03-get",
+        "url": "https://cmsapi-frontend.naruto-official.com/site/api/naruto/Image/get?path=/naruto/jp/news/2024/05/16/KUAUWNXolSDRgcY9/015.jpg",
+        "sha256": "59dcd0bf569d87af58749197ba874e644bb7172d55a75c456cdca8477d6c4f79",
+        "bytes": 1006943
+      },
+      {
+        "file": "research/references/chakra-database/04-get",
+        "url": "https://cmsapi-frontend.naruto-official.com/site/api/naruto/Image/get?path=/naruto/jp/news/2024/05/16/P50V0XtbeJeNhiih/015.jpg",
+        "sha256": "59dcd0bf569d87af58749197ba874e644bb7172d55a75c456cdca8477d6c4f79",
+        "bytes": 1006943
+      }
+    ],
+    "errors": []
+  },
+  {
+    "name": "storm",
+    "url": "https://www.bandainamcoent.com/games/naruto-x-boruto-ultimate-ninja-storm-connections",
+    "usage": "Local reference only; original copyright retained. Generated runtime assets are separate.",
+    "assets": [],
+    "errors": []
+  }
+]

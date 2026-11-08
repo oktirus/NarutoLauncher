@@ -1,0 +1,10 @@
+/* New friends retain the same TV type scale with individual photographic crops. */
+.hero-scene .hero-copy h1{font-size:clamp(62px,7vw,124px);line-height:.94;margin-bottom:30px}
+body[data-scene=hinata] .village-glow{background:radial-gradient(ellipse at right,#b6a3da20,transparent 65%)}
+body[data-scene=shikamaru] .village-glow{background:radial-gradient(ellipse at right,#e9b96522,transparent 65%)}
+body[data-scene=rocklee] .village-glow{background:radial-gradient(ellipse at right,#d9dc9b1c,transparent 65%)}
+body[data-scene=neji] .village-glow{background:radial-gradient(ellipse at right,#d7e9ed20,transparent 65%)}
+body[data-scene=choji] .village-glow{background:radial-gradient(ellipse at right,#e8a15b24,transparent 65%)}
+@media(max-height:800px) and (min-width:901px){.hero-scene .hero-copy h1{font-size:76px;margin-bottom:22px}}
+@media(max-width:560px){.hero-scene .hero-copy h1{font-size:70px;margin-bottom:26px}.backdrop{background-position:var(--scene-mobile-position,65% center)}}
+@media(max-height:620px) and (min-aspect-ratio:4/3){.hero-scene .hero-copy h1{font-size:48px;margin-bottom:16px}}

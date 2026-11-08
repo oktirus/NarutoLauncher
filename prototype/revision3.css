@@ -1,0 +1,34 @@
+.scene-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+/* Chakra surrounds the art behind the UI; the jumping character stays above it. */
+#technique-canvas{z-index:4}
+body[data-technique=gamabunta] #technique-canvas{z-index:38}
+.app-card.is-focus .app-name,.app-card.is-focus .app-meta{background:#071c27ed;text-shadow:0 1px 2px #000;box-shadow:0 0 6px 5px #071c27dc;border-radius:2px}
+.section-heading h2{background:#071c27d9;box-shadow:0 0 8px 5px #071c27bb;text-shadow:0 1px 3px #000;border-radius:2px}
+.scene-card{height:205px}
+.scene-card img{object-position:72% center}
+.hero-wallpapers{color:#f2c6be;border-color:#cda09155}
+.scene-buttons{flex-wrap:wrap}
+.reference-button{display:flex;align-items:center;justify-content:space-between;gap:20px;width:100%;border-block:1px solid #ccb18444;padding:13px 0;margin:0 0 20px;text-align:left;font-size:13px;color:#ead4ac}
+.reference-button span{font-size:11px;color:#aebfb5}
+.reference-toolbar{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:24px}
+.reference-toolbar select{min-width:200px}
+.anime-references{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.anime-reference{margin:0;background:#08222d;border:1px solid #c8ab7433;padding:8px}
+.anime-reference img{display:block;width:100%;height:200px;object-fit:contain;background:#061b25}
+.anime-reference figcaption{display:flex;align-items:center;justify-content:space-between;padding:10px 3px;font-size:12px;color:#cfceb8}
+.anime-reference a{color:#f3c68b;text-underline-offset:4px}
+.frog-preview img{position:absolute;width:56px;height:56px;left:20%;top:50%;transform:translateY(-30%)}
+.frog-preview .frog-second-app{left:auto;right:20%}
+.frog-preview canvas{z-index:2}
+body[data-scene=sakura] .village-glow{background:radial-gradient(ellipse at right,#ffd9e224,transparent 65%)}
+body[data-scene=kakashi] .village-glow{opacity:.4}
+body[data-scene=sasuke] .village-glow{opacity:.6}
+body[data-scene=kakashi] .hero-copy h1,body[data-scene=sakura] .hero-copy h1,body[data-scene=sasuke] .hero-copy h1,body[data-scene=gaara] .hero-copy h1{font-size:clamp(62px,7vw,124px);line-height:.94;margin-bottom:30px}
+@media(max-height:800px) and (min-width:901px){body[data-scene=kakashi] .hero-copy h1,body[data-scene=sakura] .hero-copy h1,body[data-scene=sasuke] .hero-copy h1,body[data-scene=gaara] .hero-copy h1{font-size:76px;margin-bottom:22px}}
+@media(max-width:650px){.scene-grid{grid-template-columns:1fr}.scene-card{height:175px}.anime-references{grid-template-columns:1fr}.anime-reference img{height:220px}.reference-button{align-items:flex-start;flex-direction:column;gap:5px}.reference-toolbar{gap:10px}.reference-toolbar select{min-width:0;max-width:190px}}
+@media(max-width:560px){.scene-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.scene-choice{font-size:12px;justify-content:center}.hero-copy{max-width:100%}.hero-copy h1{font-size:80px}}
+@media(max-width:560px){body[data-scene=kakashi] .hero-copy h1,body[data-scene=sakura] .hero-copy h1,body[data-scene=sasuke] .hero-copy h1,body[data-scene=gaara] .hero-copy h1{font-size:70px;margin-bottom:26px}}
+@media(max-height:620px) and (min-aspect-ratio:4/3){.scene-card{height:160px}.reference-button{padding:10px 0}.anime-reference img{height:150px}}
+@media(max-height:620px) and (min-aspect-ratio:4/3){body[data-scene=kakashi] .hero-copy h1,body[data-scene=sakura] .hero-copy h1,body[data-scene=sasuke] .hero-copy h1,body[data-scene=gaara] .hero-copy h1{font-size:48px;margin-bottom:16px}}
+
+body[data-scene=gaara] .village-glow{background:radial-gradient(ellipse at right,#e1b36b30,transparent 65%)}
