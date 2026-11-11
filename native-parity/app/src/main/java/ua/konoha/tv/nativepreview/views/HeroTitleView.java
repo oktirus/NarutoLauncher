@@ -1,0 +1,105 @@
+package ua.konoha.tv.nativepreview.views;
+
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.util.AttributeSet;
+import android.view.View;
+import ua.konoha.tv.nativepreview.theme.KonohaTheme;
+
+/**
+ * Custom Hero title view reproducing Chromium's #hero-title and #hero-title em.
+ * First line: Caveat Bold in #f5e3b6.
+ * Second line (em): Caveat Bold in #ed943f, rotated by -2 degrees.
+ */
+public class HeroTitleView extends View {
+    private final Paint line1Paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint line2Paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private String line1 = "Разом";
+    private String line2 = "сильніші.";
+    private final Rect bounds1 = new Rect();
+    private final Rect bounds2 = new Rect();
+
+    public HeroTitleView(Context context) {
+        super(context);
+        init();
+    }
+
+    public HeroTitleView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        init();
+    }
+
+    private void init() {
+        android.graphics.Typeface caveat = KonohaTheme.getCaveatBold(getContext());
+        line1Paint.setTypeface(caveat);
+        line1Paint.setFakeBoldText(false);
+        line1Paint.setLetterSpacing(-0.02f);
+        line1Paint.setColor(KonohaTheme.COLOR_PAPER);
+        line1Paint.setShadowLayer(14f, 0f, 3f, 0x66051924);
+
+        line2Paint.setTypeface(caveat);
+        line2Paint.setFakeBoldText(false);
+        line2Paint.setLetterSpacing(-0.02f);
+        line2Paint.setColor(KonohaTheme.COLOR_ORANGE);
+        line2Paint.setShadowLayer(14f, 0f, 3f, 0x66051924);
+    }
+
+    public void setTitle(String htmlTitle) {
+        if (htmlTitle == null || htmlTitle.isEmpty()) {
+            line1 = "";
+            line2 = "";
+        } else {
+            String clean = htmlTitle.replace("</em>", "");
+            if (clean.contains("<br>")) {
+                String[] parts = clean.split("<br>", 2);
+                line1 = parts[0].replace("<em>", "").trim();
+                line2 = parts[1].replace("<em>", "").trim();
+            } else if (clean.contains("<em>")) {
+                String[] parts = clean.split("<em>", 2);
+                line1 = parts[0].trim();
+                line2 = parts[1].trim();
+            } else {
+                line1 = clean.trim();
+                line2 = "";
+            }
+        }
+        requestLayout();
+        invalidate();
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        float textSize = KonohaTheme.dp(getContext(), 56);
+        line1Paint.setTextSize(textSize);
+        line2Paint.setTextSize(textSize);
+
+        line1Paint.getTextBounds(line1, 0, line1.length(), bounds1);
+        if (!line2.isEmpty()) {
+            line2Paint.getTextBounds(line2, 0, line2.length(), bounds2);
+        } else {
+            bounds2.setEmpty();
+        }
+
+        int height = (int) (textSize * (line2.isEmpty() ? 1.15f : 1.95f));
+        int width = (int) (Math.max(bounds1.width(), bounds2.width()) + KonohaTheme.dp(getContext(), 32));
+        setMeasuredDimension(resolveSize(width, widthMeasureSpec), resolveSize(height, heightMeasureSpec));
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        float textSize = line1Paint.getTextSize();
+        float y1 = textSize * 0.88f;
+        canvas.drawText(line1, KonohaTheme.dp(getContext(), 4), y1, line1Paint);
+
+        if (!line2.isEmpty()) {
+            float y2 = y1 + textSize * 0.86f;
+            canvas.save();
+            canvas.rotate(-4f, KonohaTheme.dp(getContext(), 4), y2);
+            canvas.drawText(line2, KonohaTheme.dp(getContext(), 10), y2, line2Paint);
+            canvas.restore();
+        }
+    }
+}

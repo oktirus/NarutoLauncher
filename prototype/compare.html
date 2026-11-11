@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title>Konoha — Technique Parity Studio (Web Prototype vs Android Native)</title>
+  <style>
+    :root {
+      --bg: #090d14;
+      --card-bg: #121824;
+      --border: #232d3f;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.25);
+      --diff-alert: #f43f5e;
+      --success: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      height: 100vh;
+      overflow: hidden;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .title-group h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge {
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    select, button, input[type="range"] {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+    select:hover, button:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 8px var(--accent-glow);
+    }
+    button.active {
+      background: var(--accent);
+      color: #000;
+      font-weight: 600;
+    }
+    .workspace {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      flex: 1;
+      min-height: 0;
+    }
+    .panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .canvas-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background: radial-gradient(circle at center, #172033 0%, #0c1017 100%);
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+    .overlay-metrics {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .diff-score {
+      font-weight: 700;
+      color: var(--diff-alert);
+    }
+    .diff-score.perfect {
+      color: var(--success);
+    }
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+    .layer-toggles {
+      display: flex;
+      gap: 8px;
+    }
+    .layer-toggles label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+    }
+    .mode-switch {
+      display: flex;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2px;
+      gap: 4px;
+    }
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .mode-btn.active {
+      background: var(--accent);
+      color: #090d14;
+    }
+    .audit-container {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      max-height: 180px;
+      overflow-y: auto;
+      font-size: 0.8rem;
+    }
+    .audit-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    .audit-table th {
+      padding: 4px 8px;
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+    }
+    .audit-table td {
+      padding: 5px 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      vertical-align: top;
+    }
+    .badge-diff {
+      background: rgba(244, 63, 94, 0.15);
+      color: var(--diff-alert);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="title-group">
+      <h1 id="studioTitle">Konoha Parity Studio</h1>
+      <div class="mode-switch">
+        <button id="btnModeTech" class="mode-btn active">🌀 Техніки (Techniques)</button>
+        <button id="btnModeHome" class="mode-btn">🏠 Інтерфейс HOME</button>
+      </div>
+      <span class="badge" id="studioBadge">1:1 Side-by-Side</span>
+    </div>
+
+    <!-- Tech Controls -->
+    <div class="controls" id="controlsTech">
+      <label for="techSelect" style="font-size: 0.85rem; color: var(--text-muted)">Техніка:</label>
+      <select id="techSelect">
+        <option value="rasenshuriken" selected>Расенсюрикен (rasenshuriken)</option>
+        <option value="rasengan">Расенган (rasengan)</option>
+        <option value="sharingan">Шарінґан (sharingan)</option>
+        <option value="chidori">Чідорі (chidori)</option>
+        <option value="kurama">Чакра Курами (kurama)</option>
+        <option value="fireball">Вогняна куля (fireball)</option>
+        <option value="amaterasu">Аматерасу (amaterasu)</option>
+        <option value="summoning">Виклик жаби (summoning)</option>
+        <option value="hiraishin">Хірайшин (hiraishin)</option>
+        <option value="gamabunta">Стрибок Гамабунти (gamabunta)</option>
+      </select>
+
+      <button id="btnPlay">⏸ Пауза</button>
+      <button id="btnStepPrev">⏮ -1 кадр</button>
+      <button id="btnStepNext">⏭ +1 кадр</button>
+
+      <label for="speedRange" style="font-size: 0.85rem; color: var(--text-muted)">Швидкість:</label>
+      <input type="range" id="speedRange" min="0.1" max="2.0" step="0.1" value="1.0" style="width: 80px;">
+      <span id="speedVal" style="font-size: 0.8rem; font-family: monospace;">1.0x</span>
+
+      <button id="btnBurst">💥 Спалах (Burst)</button>
+    </div>
+
+    <!-- Home Controls -->
+    <div class="controls" id="controlsHome" style="display: none;">
+      <label for="sceneSelect" style="font-size: 0.85rem; color: var(--text-muted)">Сцена:</label>
+      <select id="sceneSelect">
+        <option value="team7" selected>Команда №7 (team7)</option>
+        <option value="dusk">Вечірній міст (dusk)</option>
+      </select>
+
+      <label for="roiSelect" style="font-size: 0.85rem; color: var(--text-muted)">Область (ROI):</label>
+      <select id="roiSelect">
+        <option value="full" selected>🔍 Весь екран (1366x768)</option>
+        <option value="hero">🔲 1. Hero заголовок та цитата</option>
+        <option value="topbar">🔲 2. Топбар (Логотип, Годинник, Кнопки)</option>
+        <option value="wallpaper">🔲 3. Кнопка вибору шпалер</option>
+        <option value="dock">🔲 4. Док-станція та Фокус картки</option>
+        <option value="technique">🔲 5. Індикатор техніки та Футер</option>
+      </select>
+
+      <button id="btnRefreshHome">🔄 Перерахувати різницю</button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <!-- Panel 1: Web Prototype Reference -->
+    <div class="panel">
+      <div class="panel-header">
+        <span id="panelTitle1">1. Веб-еталон (Prototype Canvas)</span>
+        <span id="panelMeta1" style="color: var(--accent);">technique-art.js</span>
+      </div>
+      <div class="canvas-container">
+        <canvas id="cvsProto" width="400" height="400"></canvas>
+        <div class="overlay-metrics" id="metaProto">FPS: 60 | t: 0.00s</div>
+      </div>
+    </div>
+
+    <!-- Panel 2: Android Native Port -->
+    <div class="panel">
+      <div class="panel-header">
+        <span id="panelTitle2">2. Android Native Port (TechniqueRenderer)</span>
+        <span id="panelMeta2" style="color: #a78bfa;">TechniqueRenderer.java</span>
+      </div>
+      <div class="canvas-container">
+        <canvas id="cvsNative" width="400" height="400"></canvas>
+        <div class="overlay-metrics" id="metaNative">Render: Zero-Alloc</div>
+      </div>
+    </div>
+
+    <!-- Panel 3: Difference Heatmap -->
+    <div class="panel">
+      <div class="panel-header">
+        <span id="panelTitle3">3. Різниця (Absolute Pixel Diff)</span>
+        <span id="diffIndicator" class="diff-score">Δ: Розрахунок...</span>
+      </div>
+      <div class="canvas-container">
+        <canvas id="cvsDiff" width="400" height="400"></canvas>
+        <div class="overlay-metrics" id="metaDiff">Червоний = Розбіжність</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Home Audit Matrix (Visible in Home Mode) -->
+  <div class="audit-container" id="auditContainer" style="display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+      <strong style="color: var(--accent);">📋 Детальний аудит розбіжностей інтерфейсу HOME (Web vs Android TV)</strong>
+      <span class="badge-diff">10 виявлених візуальних регресій</span>
+    </div>
+    <table class="audit-table">
+      <thead>
+        <tr>
+          <th>№</th>
+          <th>Елемент інтерфейсу</th>
+          <th>Веб-еталон (Prototype)</th>
+          <th>Android TV Native (Lenovo TV)</th>
+          <th>Невідповідність</th>
+          <th>Необхідне виправлення в Android коді</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>Шрифт Hero заголовка</strong></td>
+          <td>Caveat-Bold (японський стиль пензлем), нахил 2-го рядка <strong>-4°</strong></td>
+          <td>Системний рубаний санс-сериф, нахил 0° (горизонтально)</td>
+          <td><span class="badge-diff">Типографіка</span></td>
+          <td>Підключити шрифт Caveat-Bold у `HeroTitleView.java`, відновити `canvas.rotate(-4f)`.</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Логотип (Top-Left)</strong></td>
+          <td>Тільки фірмовий стилізований кольоровий знак "NARUTO"</td>
+          <td>Домальовано текст "KOHOXA" білим санс-серифом поруч</td>
+          <td><span class="badge-diff">Композиція</span></td>
+          <td>Прибрати текст "KOHOXA" з верстки `TopBarView.java`, залишити лише графічний логотип.</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Кнопки дій (Top-Right)</strong></td>
+          <td>Годинник + 2 мінімалістичні гліф-іконки: 🎮 Геймпад та 📜 Сувій</td>
+          <td>2 великі чорні прямокутні кнопки `[ 🎮 МІНІГРА ]` та `[ ⚙ НАЛАШТУВАННЯ ]`</td>
+          <td><span class="badge-diff">UI Slop</span></td>
+          <td>Замінити прямокутні блоки на компактні гліфи SVG `GlyphIconView` поруч із датою.</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><strong>Кнопка вибору шпалер</strong></td>
+          <td>Скляна напівпрозора пігулка `[ 🖼 Команда №7 ]` із золотою рамкою</td>
+          <td>Широкий прямокутний банер `[ ОБРАТИ ШПАЛЕРИ: КОМАНДА №7 ]`</td>
+          <td><span class="badge-diff">Форма</span></td>
+          <td>Заокруглити кути (pill radius), прибрати капс "ОБРАТИ ШПАЛЕРИ:", залишити `[ 🖼 Назва ]`.</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><strong>Печатка "忍" у доці</strong></td>
+          <td>Золота квадратна печатка "忍" перед написом "Сувої розваг"</td>
+          <td>Печатка відсутня, лише звичайний напис "Сувої розваг"</td>
+          <td><span class="badge-diff">Атмосфера</span></td>
+          <td>Відновити відмальовування контурного гліфа печатки ніндзя перед заголовком секції.</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><strong>Індикатор техніки</strong></td>
+          <td>Витончений напівпрозорий напис `• Шарінґан ✢`</td>
+          <td>Масивний чорний прямокутний блок `ТЕХНІКА: ШАРІНҐАН`</td>
+          <td><span class="badge-diff">UI Slop</span></td>
+          <td>Прибрати важку чорну плашку, зробити тонкий текстовий маркер із символом зірки.</td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><strong>Кутові дужки фокусу</strong></td>
+          <td>Жодних дужок! Картка піднімається (-8dp), збільшується 1.15x, аура за емблемою</td>
+          <td>Жовто-оранжеві кутові дужки `[ ... ]` навколо всієї картки</td>
+          <td><span class="badge-diff">Фокус</span></td>
+          <td>Вимкнути оверлей кутових дужок у `DockView.java`, фокус реалізовувати суто аурою чакри.</td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td><strong>Субтитри під картками</strong></td>
+          <td>Унікальні описи ("Відео без поспіху", "Кіно на цей вечір", "Кіно українською")</td>
+          <td>Всюди однаковий текст `"Встановлений застосунок..."`</td>
+          <td><span class="badge-diff">Контент</span></td>
+          <td>Брати `subtitle` з мапінгу `CatalogData.java`, а не шаблонний рядок менеджера пакетів.</td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td><strong>Набір карток у доці</strong></td>
+          <td>SmartTube, Lampa, UAKino, Netflix, Kodi, Spotify, Весь архів</td>
+          <td>Замість Netflix і Spotify стоїть Kodi та TV Bro (паперова мапа)</td>
+          <td><span class="badge-diff">Паритет</span></td>
+          <td>Синхронізувати дефолтний порядок пінів: SmartTube, Lampa, UAKino, Netflix, Kodi, Spotify, Архів.</td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td><strong>Зсув фону шпалер</strong></td>
+          <td>Фон відцентровано за горизонтом, персонажі нативні 16:9</td>
+          <td>Вертикальне зміщення вниз (~30-40px), персонажі зсунуті</td>
+          <td><span class="badge-diff">Геометрія</span></td>
+          <td>Виправити масштабування та вертикальний offset у `VillageBackgroundView.java`.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer>
+    <div class="layer-toggles" id="layerToggles">
+      <span style="color: var(--text);">Шари:</span>
+      <label><input type="checkbox" id="layerCore" checked> Ядро (Core)</label>
+      <label><input type="checkbox" id="layerPlate" checked> Растрова плашка (Plate)</label>
+      <label><input type="checkbox" id="layerAccents" checked> Вихори/Акценти (Accents)</label>
+      <label><input type="checkbox" id="layerFallback"> Примусовий Fallback</label>
+    </div>
+    <div id="statusText">Завантаження ассетів...</div>
+  </footer>
+
+  <!-- Scripts -->
+  <script>window.KonohaIconSources = {};</script>
+  <script src="runtime-assets.js"></script>
+  <script src="techniques.js"></script>
+  <script src="technique-art.js"></script>
+
+  <script>
+    'use strict';
+    const TAU = Math.PI * 2;
+    const protoCvs = document.getElementById('cvsProto');
+    const protoCtx = protoCvs.getContext('2d', { willReadFrequently: true });
+    const nativeCvs = document.getElementById('cvsNative');
+    const nativeCtx = nativeCvs.getContext('2d', { willReadFrequently: true });
+    const diffCvs = document.getElementById('cvsDiff');
+    const diffCtx = diffCvs.getContext('2d', { willReadFrequently: true });
+
+    const techSelect = document.getElementById('techSelect');
+    const btnPlay = document.getElementById('btnPlay');
+    const btnStepPrev = document.getElementById('btnStepPrev');
+    const btnStepNext = document.getElementById('btnStepNext');
+    const speedRange = document.getElementById('speedRange');
+    const speedVal = document.getElementById('speedVal');
+    const btnBurst = document.getElementById('btnBurst');
+    const diffIndicator = document.getElementById('diffIndicator');
+    const metaProto = document.getElementById('metaProto');
+    const metaDiff = document.getElementById('metaDiff');
+    const statusText = document.getElementById('statusText');
+
+    const layerCore = document.getElementById('layerCore');
+    const layerPlate = document.getElementById('layerPlate');
+    const layerAccents = document.getElementById('layerAccents');
+    const layerFallback = document.getElementById('layerFallback');
+
+    const btnModeTech = document.getElementById('btnModeTech');
+    const btnModeHome = document.getElementById('btnModeHome');
+    const controlsTech = document.getElementById('controlsTech');
+    const controlsHome = document.getElementById('controlsHome');
+    const sceneSelect = document.getElementById('sceneSelect');
+    const roiSelect = document.getElementById('roiSelect');
+    const btnRefreshHome = document.getElementById('btnRefreshHome');
+    const auditContainer = document.getElementById('auditContainer');
+    const layerToggles = document.getElementById('layerToggles');
+    const panelTitle1 = document.getElementById('panelTitle1');
+    const panelMeta1 = document.getElementById('panelMeta1');
+    const panelTitle2 = document.getElementById('panelTitle2');
+    const panelMeta2 = document.getElementById('panelMeta2');
+    const panelTitle3 = document.getElementById('panelTitle3');
+    const studioTitle = document.getElementById('studioTitle');
+    const studioBadge = document.getElementById('studioBadge');
+
+    let currentMode = 'tech'; // 'tech' | 'home'
+    let currentTech = 'rasenshuriken';
+    let isPlaying = true;
+    let simTime = 0;
+    let speed = 1.0;
+    let burstLife = 0;
+    let lastStamp = performance.now();
+    let lastGamaCycle = -1;
+
+    // Cache pre-loaded images for Home Parity
+    const homeImages = {
+      team7: { proto: new Image(), tv: new Image(), loaded: 0 },
+      dusk: { proto: new Image(), tv: new Image(), loaded: 0 }
+    };
+    function initHomeImages() {
+      const scenes = ['team7', 'dusk'];
+      scenes.forEach(s => {
+        homeImages[s].proto.onload = () => { homeImages[s].loaded++; if (currentMode === 'home') renderHome(); };
+        homeImages[s].tv.onload = () => { homeImages[s].loaded++; if (currentMode === 'home') renderHome(); };
+        homeImages[s].proto.src = `home_proto_${s}.png`;
+        homeImages[s].tv.src = `home_tv_${s}.png`;
+      });
+    }
+    initHomeImages();
+
+    const rois = {
+      full: { x: 0, y: 0, w: 1366, h: 768, title: 'Весь екран (1366x768)' },
+      hero: { x: 30, y: 120, w: 420, h: 260, title: 'Hero заголовок' },
+      topbar: { x: 20, y: 15, w: 1326, h: 95, title: 'Топбар' },
+      wallpaper: { x: 30, y: 340, w: 320, h: 90, title: 'Кнопка шпалер' },
+      dock: { x: 20, y: 460, w: 1326, h: 260, title: 'Док-станція' },
+      technique: { x: 960, y: 460, w: 380, h: 260, title: 'Індикатор техніки' }
+    };
+
+    // Cache pre-loaded images for Native simulation
+    const nativeImages = {};
+    const effectFiles = {
+      rasenshuriken: '../assets/runtime/v26/effect-rasenshuriken-384.webp',
+      rasengan: '../assets/runtime/v26/effect-rasengan-384.webp',
+      sharingan: '../assets/runtime/v26/effect-sharingan-384.webp',
+      kurama: '../assets/runtime/v26/effect-kurama-384.webp',
+      fireball: '../assets/runtime/v26/effect-fireball-384.webp',
+      amaterasu: '../assets/runtime/v26/effect-amaterasu-384.webp',
+      hiraishin: '../assets/runtime/v26/effect-hiraishin-384.webp',
+      summoning: '../assets/runtime/v26/effect-summoning-384.webp',
+      'gamabunta-idle': '../assets/effects/gamabunta-idle.webp',
+      'gamabunta-jump': '../assets/effects/gamabunta-jump.webp'
+    };
+
+    function loadNativeImages() {
+      const promises = Object.entries(effectFiles).map(([k, url]) => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => { nativeImages[k] = img; resolve(); };
+          img.onerror = () => resolve();
+          img.src = url;
+        });
+      });
+      return Promise.all(promises);
+    }
+
+    const displacedNative = new WeakMap();
+    function nativePlate(c, image, size, t, mode) {
+      if (mode === 'flame' || mode === 'tails') {
+        let cached = displacedNative.get(image);
+        if (!cached) {
+          const surface = document.createElement('canvas');
+          surface.width = surface.height = Math.min(256, image.naturalWidth || 384);
+          cached = { surface, context: surface.getContext('2d'), tick: -1 };
+          displacedNative.set(image, cached);
+        }
+        const tick = Math.floor(t * 30);
+        if (cached.tick !== tick) {
+          const out = cached.context, n = cached.surface.width;
+          out.clearRect(0, 0, n, n);
+          const sh = image.naturalHeight || image.height || 384;
+          const sw = image.naturalWidth || image.width || 384;
+          for (let row = 0; row < n; row++) {
+            const y = row / n, offset = Math.sin(t * (mode === 'tails' ? 1.3 : 2.2) + y * 7) * n * (mode === 'tails' ? 0.014 : 0.009);
+            out.drawImage(image, 0, row * sh / n, sw, sh / n, offset, row, n, 1);
+          }
+          cached.tick = tick;
+        }
+        c.drawImage(cached.surface, -size / 2, -size / 2, size, size);
+      } else {
+        c.drawImage(image, -size / 2, -size / 2, size, size);
+      }
+    }
+
+    // Android TechniqueRenderer simulation matching TechniqueRenderer.java EXACTLY
+    const AndroidRenderer = {
+      draw(c, id, cx, cy, r, t, burst) {
+        if (id === 'gamabunta') {
+          this.drawGamabunta(c, cx, cy, r, t, burst);
+          return;
+        }
+        c.save();
+        c.translate(cx, cy);
+
+        if (id === 'rasenshuriken') {
+          this.drawRasenshuriken(c, r, t, burst);
+        } else if (id === 'rasengan') {
+          this.drawRasengan(c, r, t, burst);
+        } else if (id === 'sharingan') {
+          this.drawSharingan(c, r, t, burst);
+        } else if (id === 'amaterasu') {
+          this.drawAmaterasu(c, r, t, burst);
+        } else if (id === 'fireball') {
+          this.drawFireball(c, r, t, burst);
+        } else if (id === 'kurama') {
+          this.drawKurama(c, r, t, burst);
+        } else {
+          // generic fallback to prototype
+          window.KonohaTechniques.draw(c, id, 0, 0, r, t * 1000, burst, false);
+        }
+        c.restore();
+      },
+
+      drawRasenshuriken(c, r, t, burst) {
+        const bmp = layerFallback.checked ? null : nativeImages['rasenshuriken'];
+
+        // 1. Core
+        if (layerCore.checked) {
+          // Radial gradient
+          const g = c.createRadialGradient(-r * 0.15, -r * 0.15, 0, 0, 0, r * 1.16);
+          g.addColorStop(0, '#e4ffff');
+          g.addColorStop(0.5, '#72cbd1');
+          g.addColorStop(0.8, '#2f858f');
+          g.addColorStop(1, 'rgba(47, 133, 143, 0)');
+          c.save();
+          c.globalAlpha = 0.9;
+          c.fillStyle = g;
+          c.beginPath();
+          c.arc(0, 0, r * 1.16, 0, TAU);
+          c.fill();
+          c.restore();
+
+          // 23 counter-rotating high velocity arcs
+          c.save();
+          c.beginPath();
+          c.arc(0, 0, r * 1.08, 0, TAU);
+          c.clip();
+          c.lineCap = 'round';
+          for (let k = 0; k < 23; k++) {
+            c.save();
+            const rotSpeed = (k % 2 === 1 ? 1.1 : -0.85);
+            c.rotate(t * rotSpeed + k * 2.399);
+            c.scale(1.0, 0.24 + (k % 5) * 0.13);
+            c.strokeStyle = (k % 3 !== 0) ? '#dafcff' : '#4fbdea';
+            c.lineWidth = 0.7 + (k % 3) * 0.55;
+            c.globalAlpha = 0.25 + (k % 4) * 0.1;
+            c.beginPath();
+            c.arc(r * 0.13, 0, r * (0.22 + k * 0.033), 0.15, 4.9);
+            c.stroke();
+            c.restore();
+          }
+          c.restore();
+        }
+
+        // 2. Rotating Painted Plate
+        if (layerPlate.checked && bmp) {
+          c.save();
+          c.rotate(t * 2.05);
+          c.globalAlpha = 0.84;
+          const size = r * 2.46 * (1.0 + Math.sin(t * 1.5) * 0.016 + burst * 0.035);
+          c.drawImage(bmp, -size / 2, -size / 2, size, size);
+          c.restore();
+        } else if (!bmp) {
+          // Fallback vector blades
+          c.save();
+          c.rotate(t * 1.6);
+          c.fillStyle = 'rgba(184, 245, 235, 0.2)';
+          c.strokeStyle = '#b9efe5';
+          c.lineWidth = 1.3;
+          for (let k = 0; k < 4; k++) {
+            c.rotate(Math.PI / 2);
+            c.beginPath();
+            c.moveTo(r * 0.72, -r * 0.18);
+            c.quadraticCurveTo(r * 1.27, -r * 0.48, r * 1.38, -r * 0.08);
+            c.quadraticCurveTo(r * 1.10, -r * 0.17, r * 0.86, r * 0.13);
+            c.closePath();
+            c.fill();
+            c.stroke();
+          }
+          c.restore();
+          // Fallback spiral
+          for (let j = 0; j < 7; j++) {
+            c.save();
+            c.rotate(-t * 0.7 * 1.45 + j * TAU / 7);
+            c.strokeStyle = j % 2 ? '#d8faff' : '#62cfea';
+            c.lineWidth = j % 2 ? 1 : 2;
+            c.globalAlpha = 0.45;
+            c.beginPath();
+            for (let k = 0; k <= 44; k++) {
+              const a = k / 44 * 3.6, rad = r * 0.8 * (0.72 + k / 44 * 0.3);
+              const x = Math.cos(a) * rad, y = Math.sin(a) * rad * 0.96;
+              k ? c.lineTo(x, y) : c.moveTo(x, y);
+            }
+            c.stroke();
+            c.restore();
+          }
+        }
+
+        // 3. Accents
+        if (layerAccents.checked) {
+          c.save();
+          c.lineCap = 'round';
+          for (let k = 0; k < 18; k++) {
+            const a = k * TAU / 18 + t * 2.4;
+            const rad = r * (0.82 + (k % 3) * 0.09);
+            c.strokeStyle = (k % 2 === 1) ? '#e6fdff' : '#72d8ee';
+            c.globalAlpha = 0.2 + (k % 3) * 0.1;
+            c.lineWidth = 0.6 + (k % 3) * 0.45;
+            c.beginPath();
+            c.ellipse(Math.cos(a) * r * 0.06, Math.sin(a) * r * 0.06, rad, rad * 0.83, a, a, a + 0.55);
+            c.stroke();
+          }
+          c.restore();
+        }
+
+        // 4. Burst
+        if (burst > 0) {
+          c.save();
+          c.strokeStyle = '#b7f1e5';
+          c.lineWidth = 1.2;
+          c.globalAlpha = burst * 0.5;
+          c.beginPath();
+          c.arc(0, 0, r * (1.04 + (1.0 - burst) * 0.14), 0, TAU);
+          c.stroke();
+          c.restore();
+        }
+      },
+
+      drawRasengan(c, r, t, burst) {
+        const bmp = nativeImages['rasengan'];
+        if (layerPlate.checked && bmp) {
+          c.save();
+          c.rotate(t * 0.82);
+          c.globalAlpha = 0.84;
+          const size = r * 2.46 * (1.0 + Math.sin(t * 1.5) * 0.016 + burst * 0.035);
+          c.drawImage(bmp, -size / 2, -size / 2, size, size);
+          c.restore();
+        }
+        if (burst > 0) {
+          c.save();
+          c.strokeStyle = '#7fe2ff';
+          c.lineWidth = 1.2;
+          c.globalAlpha = burst * 0.5;
+          c.beginPath();
+          c.arc(0, 0, r * (1.04 + (1.0 - burst) * 0.14), 0, TAU);
+          c.stroke();
+          c.restore();
+        }
+      },
+
+      drawSharingan(c, r, t, burst) {
+        const bmp = layerFallback.checked ? null : nativeImages['sharingan'];
+        if (layerPlate.checked && bmp) {
+          c.save();
+          c.rotate(t * 0.38);
+          c.globalAlpha = 0.84;
+          const size = r * 2.46 * (1.0 + Math.sin(t * 1.5) * 0.016 + burst * 0.035);
+          c.drawImage(bmp, -size / 2, -size / 2, size, size);
+          c.restore();
+
+          // Specular highlight on glass surface (technique-art.js:180)
+          c.save();
+          c.fillStyle = '#fff5e4';
+          c.globalAlpha = 0.85;
+          c.beginPath();
+          c.ellipse(-r * 0.68, -r * 0.35, r * 0.065, r * 0.12, 0.6, 0, TAU);
+          c.fill();
+          c.restore();
+        } else {
+          // Vector fallback (techniques.js)
+          window.KonohaTechniques.draw(c, 'sharingan', 0, 0, r, t * 1000, burst, false);
+        }
+
+        if (burst > 0) {
+          c.save();
+          c.strokeStyle = '#c8283b';
+          c.lineWidth = 1.2;
+          c.globalAlpha = burst * 0.5;
+          c.beginPath();
+          c.arc(0, 0, r * (1.04 + (1.0 - burst) * 0.14), 0, TAU);
+          c.stroke();
+          c.restore();
+        }
+      },
+
+      drawAmaterasu(c, r, t, burst) {
+        const bmp = nativeImages['amaterasu'];
+        if (layerPlate.checked && bmp) {
+          c.save();
+          c.globalAlpha = 0.95;
+          const size = r * 2.46 * (1.0 + Math.sin(t * 1.5) * 0.016 + burst * 0.035);
+          nativePlate(c, bmp, size, t, 'flame');
+          c.restore();
+        }
+        if (burst > 0) {
+          c.save();
+          c.strokeStyle = '#c3a0ed';
+          c.lineWidth = 1.2;
+          c.globalAlpha = burst * 0.5;
+          c.beginPath();
+          c.arc(0, 0, r * (1.04 + (1.0 - burst) * 0.14), 0, TAU);
+          c.stroke();
+          c.restore();
+        }
+      },
+
+      drawFireball(c, r, t, burst) {
+        const bmp = nativeImages['fireball'];
+        if (layerPlate.checked && bmp) {
+          c.save();
+          c.globalAlpha = 0.84;
+          const size = r * 2.46 * (1.0 + Math.sin(t * 1.5) * 0.016 + burst * 0.035);
+          nativePlate(c, bmp, size, t, 'flame');
+          c.restore();
+        }
+        if (burst > 0) {
+          c.save();
+          c.strokeStyle = '#ffb65c';
+          c.lineWidth = 1.2;
+          c.globalAlpha = burst * 0.5;
+          c.beginPath();
+          c.arc(0, 0, r * (1.04 + (1.0 - burst) * 0.14), 0, TAU);
+          c.stroke();
+          c.restore();
+        }
+      },
+
+      drawKurama(c, r, t, burst) {
+        const bmp = nativeImages['kurama'];
+        if (layerPlate.checked && bmp) {
+          c.save();
+          c.globalAlpha = 0.84;
+          const size = r * 2.46 * (1.0 + Math.sin(t * 1.5) * 0.016 + burst * 0.035);
+          nativePlate(c, bmp, size, t, 'tails');
+          c.restore();
+        }
+        if (burst > 0) {
+          c.save();
+          c.strokeStyle = '#ff9a46';
+          c.lineWidth = 1.2;
+          c.globalAlpha = burst * 0.5;
+          c.beginPath();
+          c.arc(0, 0, r * (1.04 + (1.0 - burst) * 0.14), 0, TAU);
+          c.stroke();
+          c.restore();
+        }
+      },
+
+      drawGamabunta(c, cx, cy, r, t, burst) {
+        window.KonohaTechniques.draw(c, 'gamabunta', cx, cy, r, t * 1000, burst, false);
+      }
+    };
+
+    function computeDiff() {
+      const w = 400, h = 400;
+      const img1 = protoCtx.getImageData(0, 0, w, h);
+      const img2 = nativeCtx.getImageData(0, 0, w, h);
+      const diff = diffCtx.createImageData(w, h);
+
+      const d1 = img1.data;
+      const d2 = img2.data;
+      const out = diff.data;
+
+      let totalDelta = 0;
+      let maxDelta = 0;
+      let diffPixels = 0;
+      const totalPixels = w * h;
+
+      for (let i = 0; i < d1.length; i += 4) {
+        const dr = Math.abs(d1[i] - d2[i]);
+        const dg = Math.abs(d1[i + 1] - d2[i + 1]);
+        const db = Math.abs(d1[i + 2] - d2[i + 2]);
+        const da = Math.abs(d1[i + 3] - d2[i + 3]);
+        const delta = Math.max(dr, dg, db, da);
+
+        if (delta > 8) {
+          diffPixels++;
+          totalDelta += delta;
+          if (delta > maxDelta) maxDelta = delta;
+          // Highlight difference in vibrant magenta/red heatmap
+          out[i] = 255;
+          out[i + 1] = 40;
+          out[i + 2] = 100;
+          out[i + 3] = Math.min(255, 60 + delta * 2);
+        } else {
+          // Dim reference
+          out[i] = 20;
+          out[i + 1] = 30;
+          out[i + 2] = 45;
+          out[i + 3] = 255;
+        }
+      }
+
+      diffCtx.putImageData(diff, 0, 0);
+
+      const meanDelta = diffPixels > 0 ? (totalDelta / diffPixels).toFixed(2) : 0;
+      const diffPct = ((diffPixels / totalPixels) * 100).toFixed(2);
+
+      diffIndicator.textContent = `Δ: ${diffPct}% (${diffPixels} px) | Mean: ${meanDelta}`;
+      if (diffPct < 1.0) {
+        diffIndicator.className = 'diff-score perfect';
+      } else {
+        diffIndicator.className = 'diff-score';
+      }
+    }
+
+    function renderHome() {
+      const scene = sceneSelect.value;
+      const roiKey = roiSelect.value;
+      const roi = rois[roiKey] || rois.full;
+
+      const imgP = homeImages[scene].proto;
+      const imgT = homeImages[scene].tv;
+
+      if (!imgP.complete || !imgT.complete) {
+        statusText.textContent = `Завантаження кадрів сцени ${scene}...`;
+        return;
+      }
+
+      protoCvs.width = roi.w;
+      protoCvs.height = roi.h;
+      nativeCvs.width = roi.w;
+      nativeCvs.height = roi.h;
+      diffCvs.width = roi.w;
+      diffCvs.height = roi.h;
+
+      protoCtx.clearRect(0, 0, roi.w, roi.h);
+      nativeCtx.clearRect(0, 0, roi.w, roi.h);
+
+      protoCtx.drawImage(imgP, roi.x, roi.y, roi.w, roi.h, 0, 0, roi.w, roi.h);
+      nativeCtx.drawImage(imgT, roi.x, roi.y, roi.w, roi.h, 0, 0, roi.w, roi.h);
+
+      computeHomeDiff(roi.w, roi.h);
+
+      metaProto.textContent = `Сцена: ${scene} | ${roi.title} (${roi.w}x${roi.h})`;
+      metaNative.textContent = `Lenovo TV 14 (1366x768 physical)`;
+      metaDiff.textContent = `Червоний = Розбіжність (> 15)`;
+      statusText.textContent = `HOME Parity: сцена "${scene}", область: ${roi.title}`;
+      statusText.style.color = 'var(--accent)';
+    }
+
+    function computeHomeDiff(w, h) {
+      const img1 = protoCtx.getImageData(0, 0, w, h);
+      const img2 = nativeCtx.getImageData(0, 0, w, h);
+      const diff = diffCtx.createImageData(w, h);
+
+      const d1 = img1.data;
+      const d2 = img2.data;
+      const out = diff.data;
+
+      let totalDelta = 0;
+      let maxDelta = 0;
+      let diffPixels = 0;
+      const totalPixels = w * h;
+
+      for (let i = 0; i < d1.length; i += 4) {
+        const dr = Math.abs(d1[i] - d2[i]);
+        const dg = Math.abs(d1[i + 1] - d2[i + 1]);
+        const db = Math.abs(d1[i + 2] - d2[i + 2]);
+        const delta = Math.max(dr, dg, db);
+
+        if (delta > 15) {
+          diffPixels++;
+          totalDelta += delta;
+          if (delta > maxDelta) maxDelta = delta;
+          out[i] = 255;
+          out[i + 1] = 30;
+          out[i + 2] = 90;
+          out[i + 3] = 255;
+        } else {
+          out[i] = Math.floor(d1[i] / 4);
+          out[i + 1] = Math.floor(d1[i + 1] / 4);
+          out[i + 2] = Math.floor(d1[i + 2] / 4);
+          out[i + 3] = 255;
+        }
+      }
+
+      diffCtx.putImageData(diff, 0, 0);
+
+      const meanDelta = diffPixels > 0 ? (totalDelta / diffPixels).toFixed(2) : 0;
+      const diffPct = ((diffPixels / totalPixels) * 100).toFixed(2);
+
+      diffIndicator.textContent = `Δ: ${diffPct}% (${diffPixels} px) | Mean: ${meanDelta}`;
+      diffIndicator.className = diffPct < 1.0 ? 'diff-score perfect' : 'diff-score';
+    }
+
+    function switchMode(mode) {
+      currentMode = mode;
+      if (mode === 'tech') {
+        btnModeTech.classList.add('active');
+        btnModeHome.classList.remove('active');
+        controlsTech.style.display = 'flex';
+        controlsHome.style.display = 'none';
+        auditContainer.style.display = 'none';
+        layerToggles.style.display = 'flex';
+        studioTitle.textContent = 'Konoha Technique Parity Studio';
+        studioBadge.textContent = 'Isolated 1:1 Side-by-Side';
+        panelTitle1.textContent = '1. Веб-еталон (Prototype Canvas)';
+        panelMeta1.textContent = 'technique-art.js';
+        panelTitle2.textContent = '2. Android Native Port (TechniqueRenderer)';
+        panelMeta2.textContent = 'TechniqueRenderer.java';
+        panelTitle3.textContent = '3. Різниця (Absolute Pixel Diff)';
+        protoCvs.width = nativeCvs.width = diffCvs.width = 400;
+        protoCvs.height = nativeCvs.height = diffCvs.height = 400;
+        statusText.textContent = 'Режим порівняння процедурних технік чакри';
+        statusText.style.color = 'var(--text-muted)';
+        isPlaying = true;
+        requestAnimationFrame(render);
+      } else {
+        btnModeHome.classList.add('active');
+        btnModeTech.classList.remove('active');
+        controlsTech.style.display = 'none';
+        controlsHome.style.display = 'flex';
+        auditContainer.style.display = 'block';
+        layerToggles.style.display = 'none';
+        studioTitle.textContent = 'Konoha Home Parity Studio';
+        studioBadge.textContent = 'Full UI 1:1 Verification';
+        panelTitle1.textContent = '1. Веб-еталон (Prototype Home)';
+        panelMeta1.textContent = 'index.html (1366x768)';
+        panelTitle2.textContent = '2. Android TV Native (Lenovo TV)';
+        panelMeta2.textContent = 'ua.konoha.tv.nativepreview';
+        panelTitle3.textContent = '3. Різниця (Absolute Pixel Diff Heatmap)';
+        isPlaying = false;
+        renderHome();
+      }
+    }
+
+    function render(now) {
+      if (currentMode !== 'tech') return;
+      if (isPlaying) {
+        const dt = (now - lastStamp) / 1000;
+        simTime += dt * speed;
+        if (burstLife > 0) {
+          burstLife = Math.max(0, burstLife - dt * 2.5);
+        }
+      }
+      lastStamp = now;
+
+      // 1. Clear canvases
+      protoCtx.clearRect(0, 0, 400, 400);
+      nativeCtx.clearRect(0, 0, 400, 400);
+
+      const cx = 200, cy = 200, r = 110;
+
+      if (currentTech === 'gamabunta') {
+        const cycle = Math.floor(simTime / 2.5);
+        if (cycle !== lastGamaCycle) {
+          lastGamaCycle = cycle;
+          const leftToRight = cycle % 2 === 0;
+          const from = leftToRight ? { x: cx - 85, y: cy + 30, r: r * 0.75 } : { x: cx + 85, y: cy + 30, r: r * 0.75 };
+          const to = leftToRight ? { x: cx + 85, y: cy + 30, r: r * 0.75 } : { x: cx - 85, y: cy + 30, r: r * 0.75 };
+          window.KonohaTechniques.move?.(from, to, simTime * 1000, leftToRight ? 1 : -1);
+        }
+      }
+
+      // 2. Draw Prototype Reference
+      if (window.KonohaTechniques && window.KonohaTechniques.draw) {
+        window.KonohaTechniques.draw(protoCtx, currentTech, cx, cy, r, simTime * 1000, burstLife, false);
+      }
+
+      // 3. Draw Native Simulation
+      AndroidRenderer.draw(nativeCtx, currentTech, cx, cy, r, simTime, burstLife);
+
+      // 4. Compute Real-time Diff
+      computeDiff();
+
+      metaProto.textContent = `t: ${simTime.toFixed(2)}s | speed: ${speed}x`;
+
+      requestAnimationFrame(render);
+    }
+
+    // Event Listeners
+    btnModeTech.addEventListener('click', () => switchMode('tech'));
+    btnModeHome.addEventListener('click', () => switchMode('home'));
+    sceneSelect.addEventListener('change', renderHome);
+    roiSelect.addEventListener('change', renderHome);
+    btnRefreshHome.addEventListener('click', renderHome);
+
+    // Event Listeners
+    techSelect.addEventListener('change', (e) => {
+      currentTech = e.target.value;
+      if (window.KonohaTechniques && window.KonohaTechniques.setActive) {
+        window.KonohaTechniques.setActive(currentTech);
+      }
+    });
+
+    btnPlay.addEventListener('click', () => {
+      isPlaying = !isPlaying;
+      btnPlay.textContent = isPlaying ? '⏸ Пауза' : '▶ Відтворити';
+      btnPlay.classList.toggle('active', !isPlaying);
+    });
+
+    btnStepPrev.addEventListener('click', () => {
+      isPlaying = false;
+      btnPlay.textContent = '▶ Відтворити';
+      simTime = Math.max(0, simTime - 0.0166);
+    });
+
+    btnStepNext.addEventListener('click', () => {
+      isPlaying = false;
+      btnPlay.textContent = '▶ Відтворити';
+      simTime += 0.0166;
+    });
+
+    speedRange.addEventListener('input', (e) => {
+      speed = parseFloat(e.target.value);
+      speedVal.textContent = speed.toFixed(1) + 'x';
+    });
+
+    btnBurst.addEventListener('click', () => {
+      burstLife = 1.0;
+    });
+
+    // Initialize
+    loadNativeImages().then(() => {
+      if (window.KonohaTechniques && window.KonohaTechniques.setActive) {
+        window.KonohaTechniques.setActive(currentTech).then(() => {
+          statusText.textContent = 'Всі техніки та ассети завантажено (Готово до 1:1 порівняння)';
+          statusText.style.color = 'var(--success)';
+        });
+      }
+      requestAnimationFrame(render);
+    });
+  </script>
+</body>
+</html>
