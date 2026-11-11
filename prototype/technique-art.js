@@ -2,15 +2,25 @@
 /* Reference-led painted plates with distinct motion and a traveling Gamabunta. */
 (()=>{
  const api=window.KonohaTechniques,baseDraw=api.draw,tau=Math.PI*2,images={},loaded={};
- const completePaintings=new Set(['rasengan','sharingan','kurama','fireball','amaterasu','chidori']);
+ const completePaintings=new Set(['rasengan','sharingan','kurama','fireball','amaterasu']);
+ api.proceduralEffects=['chidori'];
  api.completePaintings=[...completePaintings];
  const ids=api.list.map(t=>t.id);
  api.list.push({id:'gamabunta',name:'Стрибок Гамабунти',owner:'Володар жаб',color:'#e7b789',cue:'gamabunta',description:'Гамабунта стрибає вперед і здіймає пил при приземленні.'});
- const imageNames=[...ids,'gamabunta-idle','gamabunta-jump'];
- api.ready=Promise.all(imageNames.map(name=>{
-  const image=new Image();images[name]=image;image.src=window.KonohaEffectSources[name];
-  return image.decode().then(()=>{loaded[name]=true;dispatchEvent(new Event('konoha-art-ready'));}).catch(()=>{loaded[name]=false;});
- }));
+ const pending=new Map(),variants=window.KonohaRuntimeAssets.effects;let active='rasengan';
+ const names=id=>id==='chidori'?[]:id==='gamabunta'?['gamabunta-idle','gamabunta-jump']:[id];
+ function release(name){const image=images[name];if(!image)return;const cached=displaced.get(image);if(cached){cached.surface.width=cached.surface.height=0;displaced.delete(image);}image.removeAttribute('src');delete images[name];delete loaded[name];pending.delete(name);}
+ function load(name,pixels){
+  const url=pixels<=384?variants[name].small:variants[name].full;
+  if(images[name]?.getAttribute('src')===url)return pending.get(name)||Promise.resolve();
+  release(name);const image=new Image();images[name]=image;image.src=url;
+  const promise=image.decode().then(()=>{if(images[name]!==image)return;loaded[name]=true;dispatchEvent(new Event('konoha-art-ready'));}).catch(()=>{if(images[name]===image)loaded[name]=false;});pending.set(name,promise);return promise;
+ }
+ api.ensure=(id,pixels=384)=>Promise.all(names(id).map(name=>load(name,pixels)));
+ api.trim=()=>{for(const name of Object.keys(images))if(!names(active).includes(name))release(name);};
+ api.releaseAll=()=>{for(const name of Object.keys(images))release(name);};
+ api.setActive=id=>{active=id;api.trim();api.ready=api.ensure(id,Math.min(181,innerWidth*.106)*1.6*Math.min(devicePixelRatio||1,2));return api.ready;};
+ api.ready=Promise.resolve();
  api.artStatus=()=>({...loaded});
  let jump=null,anchor=null,landings=[];
  // Painted jump faces left; seated pose faces right. They need opposite transforms.
@@ -50,10 +60,10 @@
  function plate(c,image,size,t,mode){
   if(mode==='flame'||mode==='tails'){
    let cached=displaced.get(image);
-   if(!cached){const surface=document.createElement('canvas');surface.width=surface.height=512;cached={surface,context:surface.getContext('2d'),tick:-1};displaced.set(image,cached);}
+   if(!cached){const surface=document.createElement('canvas');surface.width=surface.height=Math.min(256,image.naturalWidth);cached={surface,context:surface.getContext('2d'),tick:-1};displaced.set(image,cached);}
    const tick=Math.floor(t*30);
    if(cached.tick!==tick){
-    const out=cached.context,n=512;out.clearRect(0,0,n,n);out.globalAlpha=1;
+    const out=cached.context,n=cached.surface.width;out.clearRect(0,0,n,n);out.globalAlpha=1;
     // Each integer destination row is written once; apply transparency only on final composite.
     for(let row=0;row<n;row++){
      const y=row/n,offset=Math.sin(t*(mode==='tails'?1.3:2.2)+y*7)*n*(mode==='tails'?.014:.009);
@@ -65,27 +75,36 @@
   }else c.drawImage(image,-size/2,-size/2,size,size);
  }
  function electricity(c,r,t,energy=0){
-  // Successive charge, crawling corona and branching discharge phases; no rotating wheel.
-  const tick=Math.floor(t*24),power=.65+Math.pow(.5+.5*Math.sin(t*8.2),5)*.35+energy*.35;
-  const noise=n=>{const v=Math.sin(n*127.1+tick*311.7)*43758.5453;return v-Math.floor(v);};
-  function path(points,strength=1){
-   c.beginPath();points.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));
-   c.strokeStyle='#328ff4';c.lineWidth=3.6*strength;c.shadowColor='#69beff';c.shadowBlur=11;c.globalAlpha=.42*power;c.stroke();
-   c.strokeStyle='#f0fcff';c.lineWidth=.85*strength;c.shadowBlur=3;c.globalAlpha=.85*power;c.stroke();
-  }
+  // Chidori is drawn entirely from moving forks, all converging toward one nucleus.
+  const tick=Math.floor(t*24),noise=n=>{const v=Math.sin(n*127.1+tick*311.7)*43758.5453;return v-Math.floor(v);};
+  const nucleus={x:Math.sin(t*13)*r*.035,y:Math.cos(t*11)*r*.035};
+  const stroke=(points,alpha,width)=>{
+   c.beginPath();points.forEach((p,i)=>i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y));
+   c.globalAlpha=alpha;c.strokeStyle='#459cff';c.lineWidth=width*3;c.shadowColor='#67c7ff';c.shadowBlur=r*.085;c.stroke();
+   c.strokeStyle='#ecfbff';c.lineWidth=width;c.shadowBlur=r*.018;c.stroke();
+  };
   c.save();c.lineJoin='miter';c.lineCap='round';
-  for(let k=0;k<3;k++){
-   const points=[],start=t*(k%2?-.4:.6)+k*tau/3;
-   for(let j=0;j<28;j++){const a=start+j*.037,rr=r*(.86+k*.055+(noise(k*100+j)-.5)*.11);points.push([Math.cos(a)*rr,Math.sin(a)*rr]);}
-   path(points,.65);
+  for(let k=0;k<22;k++){
+   const angle=k*tau/22+(noise(k+3)-.5)*.24,reach=r*(.96+noise(k+63)*.34+energy*.12),points=[];
+   for(let j=0;j<=9;j++){
+    const u=j/9,rr=reach*(1-u),side=(noise(k*31+j)-.5)*r*.18*Math.sin(u*Math.PI);
+    points.push({x:nucleus.x+Math.cos(angle)*rr-Math.sin(angle)*side,y:nucleus.y+Math.sin(angle)*rr+Math.cos(angle)*side});
+   }
+   stroke(points,.32+noise(k+90)*.4,r*(.006+noise(k+120)*.006));
+   for(let f=0;f<2;f++){
+    const join=points[3+f*2],a=angle+(f?1:-1)*(.4+noise(k+f+9)*.6),fork=[];
+    for(let j=0;j<4;j++){const u=1-j/3;fork.push({x:join.x+Math.cos(a)*r*.28*u+Math.sin(j*4+k+tick)*r*.025*u,y:join.y+Math.sin(a)*r*.28*u});}
+    stroke(fork,.35+noise(k+44)*.4,r*.005);
+   }
+   // A short charge segment travels OUTSIDE -> CENTER, then the next enters.
+   const progress=(t*(.85+k%4*.12)+k*.137)%1,index=Math.floor(progress*7);
+   stroke(points.slice(index,index+3),.7+energy*.2,r*.013);
   }
-  for(let k=0;k<13;k++){
-   const angle=k*tau/13+(noise(k+19)-.5)*.3,points=[];
-   for(let j=0;j<8;j++){const rr=r*(.72+j*(.052+noise(k+80)*.019)),a=angle+(noise(k*23+j)-.5)*.17;points.push([Math.cos(a)*rr,Math.sin(a)*rr]);}
-   path(points,k%4===tick%4?1.25:.7);
-   for(let branch=0;branch<2;branch++){const start=points[3+branch*2],a=angle+(branch?1:-1)*(.5+noise(k+90)*.45),fork=[start];for(let j=1;j<4;j++)fork.push([start[0]+Math.cos(a)*r*j*.07,start[1]+Math.sin(a)*r*j*.07+(noise(k+j+50)-.5)*r*.065]);path(fork,.43);}
+  // No filled disc: densely layered short, jagged bolts form the living core.
+  for(let k=0;k<18;k++){
+   const a=k*2.399+t*.16,rr=r*(.12+noise(k+400)*.17+energy*.08);
+   stroke([{x:nucleus.x+Math.cos(a)*rr,y:nucleus.y+Math.sin(a)*rr},{x:nucleus.x+Math.cos(a+.6)*rr*.42,y:nucleus.y+Math.sin(a+.6)*rr*.42},nucleus],.8,r*(.01+noise(k+800)*.014));
   }
-  for(let k=0;k<32;k++){const u=(t*(.42+k%3*.1)+k*.071)%1,a=k*2.399+t*.18,rr=r*(.84+u*.37),x=Math.cos(a)*rr,y=Math.sin(a)*rr;c.globalAlpha=Math.pow(1-u,2)*.8;c.fillStyle=k%3?'#c9f4ff':'#7c95ff';c.shadowColor='#8bdbff';c.shadowBlur=5;c.fillRect(x,y,.7+(k%3)*.4,1.4+(1-u)*2);}
   c.restore();
  }
  function accents(c,id,r,t,energy){
@@ -130,7 +149,7 @@
  function frog(c,x,y,r,time,preview,energy){
   const t=time/1000;
   let p;
-  if(preview&&time){const cycle=t%4,forward=cycle<2,local=cycle%2,u=Math.min(1,local/.7),ease=u*u*(3-2*u);const left={x:x-r*.6,y:y+r*.2,r:r*.8},right={x:x+r*.6,y:y+r*.2,r:r*.8};p={x:(forward?left.x:right.x)+(forward?1:-1)*r*1.2*ease,y:left.y-Math.sin(Math.PI*u)*r*.8,r:r*.8,u,airborne:u>.09&&u<.9,direction:forward?1:-1,landed:local>=.7?local-.7:null};}
+  if(preview){p={...perch({x,y,r}),direction:1,airborne:false,landed:null};}
   else p=time?(position(time)||perch({x,y,r})):{...(anchor||perch({x,y,r})),direction:jump?.direction||-1,airborne:false,landed:null};
   // The summoned creature is the focus marker; its landing seal remains on the target.
   // The painted summoning plate includes permanent smoke: use an ink-only seal here.
@@ -150,6 +169,7 @@
  }
  api.draw=(c,id,x,y,r,time=0,energy=0,preview=false)=>{
   if(id==='gamabunta'){frog(c,x,y,r,time,preview,energy);return;}
+  if(id==='chidori'){c.save();c.translate(x,y);electricity(c,r,time/1000,energy);c.restore();return;}
   if(!loaded[id]){baseDraw(c,id,x,y,r,time,energy);return;}
   const t=time/1000;c.save();c.translate(x,y);
   if(!completePaintings.has(id))core(c,id,r,t);

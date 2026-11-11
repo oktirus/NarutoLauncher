@@ -49,6 +49,9 @@ public class MainActivity extends Activity {
     private TextView quoteAuthorView;
     private OutlinedGlyphButton sceneChoiceBtn;
     private TechniqueShortcutButton techniqueBtn;
+    private FrameLayout brandBtn;
+    private OutlinedGlyphButton gameBtn;
+    private OutlinedGlyphButton settingsBtn;
 
     // Panels
     private FrameLayout modalContainer;
@@ -103,10 +106,13 @@ public class MainActivity extends Activity {
         applyScene(prefs.getScene(), false);
         applyTechnique(prefs.getTechnique());
         dockView.render();
+        wireSpatialNavigation();
         updateClock();
         View firstCard = dockView.getFirstCard();
         if (firstCard != null) {
             lastFocusedView = firstCard;
+            lastFocusedPackage = firstCard.getTag() instanceof AppItem ? ((AppItem) firstCard.getTag()).getPackageName() : null;
+            lastFocusedIsLibrary = false;
         }
         restoreHomeFocus();
 
@@ -117,7 +123,15 @@ public class MainActivity extends Activity {
 
         // Початковий фокус на перший елемент дока
         mainHandler.postDelayed(() -> {
-            if (activityResumed && activePanel == null && ambientOverlay.getVisibility() != View.VISIBLE) restoreHomeFocus();
+            if (activityResumed && activePanel == null && ambientOverlay.getVisibility() != View.VISIBLE) {
+                View fc = dockView.getFirstCard();
+                if (fc != null) {
+                    lastFocusedView = fc;
+                    lastFocusedPackage = fc.getTag() instanceof AppItem ? ((AppItem) fc.getTag()).getPackageName() : null;
+                    lastFocusedIsLibrary = false;
+                }
+                restoreHomeFocus();
+            }
         }, 150);
     }
 
@@ -210,8 +224,9 @@ public class MainActivity extends Activity {
         ));
 
         // Бренд / Лого (#home-btn / .brand)
-        FrameLayout brandBtn = new FrameLayout(this);
-        brandBtn.setFocusable(false);
+        brandBtn = new FrameLayout(this);
+        brandBtn.setFocusable(true);
+        brandBtn.setFocusableInTouchMode(true);
         brandBtn.setClickable(true);
         ImageView logo = new ImageView(this);
         logo.setScaleType(ImageView.ScaleType.FIT_START);
@@ -219,7 +234,13 @@ public class MainActivity extends Activity {
             logo.setImageBitmap(android.graphics.BitmapFactory.decodeStream(is));
         } catch (Exception ignored) {}
         brandBtn.addView(logo, new FrameLayout.LayoutParams(dp(150), dp(54), Gravity.CENTER_VERTICAL));
-        brandBtn.setOnClickListener(v -> restoreHomeFocus());
+        brandBtn.setOnFocusChangeListener((v, hasFocus) -> {
+            v.animate().scaleX(hasFocus ? 1.05f : 1.0f).scaleY(hasFocus ? 1.05f : 1.0f).setDuration(150).start();
+        });
+        brandBtn.setOnClickListener(v -> {
+            audioController.playUiSound();
+            restoreHomeFocus();
+        });
         bar.addView(brandBtn);
 
         View spacer = new View(this);
@@ -250,7 +271,7 @@ public class MainActivity extends Activity {
         topStatus.addView(clockLayout);
 
         // Кнопка мінігри (елегантний безрамковий гліф)
-        OutlinedGlyphButton gameBtn = new OutlinedGlyphButton(this);
+        gameBtn = new OutlinedGlyphButton(this);
         gameBtn.setBorderless(true);
         gameBtn.setGlyph(GlyphIconView.Glyph.GAMEPAD);
         gameBtn.setIconSize(18);
@@ -258,7 +279,7 @@ public class MainActivity extends Activity {
         topStatus.addView(gameBtn);
 
         // Кнопка налаштувань (елегантний безрамковий гліф)
-        OutlinedGlyphButton settingsBtn = new OutlinedGlyphButton(this);
+        settingsBtn = new OutlinedGlyphButton(this);
         settingsBtn.setBorderless(true);
         settingsBtn.setGlyph(GlyphIconView.Glyph.SCROLL);
         settingsBtn.setIconSize(18);
@@ -406,6 +427,53 @@ public class MainActivity extends Activity {
         footer.addView(tag);
 
         return footer;
+    }
+
+    public void wireSpatialNavigation() {
+        View firstCard = dockView != null ? dockView.getFirstCard() : null;
+        View archiveCard = dockView != null ? dockView.getArchiveCard() : null;
+
+        if (sceneChoiceBtn != null) {
+            if (sceneChoiceBtn.getId() == View.NO_ID) sceneChoiceBtn.setId(View.generateViewId());
+            if (firstCard != null) {
+                if (firstCard.getId() == View.NO_ID) firstCard.setId(View.generateViewId());
+                firstCard.setNextFocusUpId(sceneChoiceBtn.getId());
+                sceneChoiceBtn.setNextFocusDownId(firstCard.getId());
+            }
+            if (brandBtn != null) {
+                if (brandBtn.getId() == View.NO_ID) brandBtn.setId(View.generateViewId());
+                sceneChoiceBtn.setNextFocusUpId(brandBtn.getId());
+                brandBtn.setNextFocusDownId(sceneChoiceBtn.getId());
+            }
+        }
+
+        if (brandBtn != null && gameBtn != null) {
+            if (brandBtn.getId() == View.NO_ID) brandBtn.setId(View.generateViewId());
+            if (gameBtn.getId() == View.NO_ID) gameBtn.setId(View.generateViewId());
+            brandBtn.setNextFocusRightId(gameBtn.getId());
+            gameBtn.setNextFocusLeftId(brandBtn.getId());
+        }
+
+        if (gameBtn != null && settingsBtn != null) {
+            if (gameBtn.getId() == View.NO_ID) gameBtn.setId(View.generateViewId());
+            if (settingsBtn.getId() == View.NO_ID) settingsBtn.setId(View.generateViewId());
+            gameBtn.setNextFocusRightId(settingsBtn.getId());
+            settingsBtn.setNextFocusLeftId(gameBtn.getId());
+        }
+
+        if (techniqueBtn != null) {
+            if (techniqueBtn.getId() == View.NO_ID) techniqueBtn.setId(View.generateViewId());
+            if (archiveCard != null) {
+                if (archiveCard.getId() == View.NO_ID) archiveCard.setId(View.generateViewId());
+                archiveCard.setNextFocusUpId(techniqueBtn.getId());
+                techniqueBtn.setNextFocusDownId(archiveCard.getId());
+            }
+            if (settingsBtn != null) {
+                if (settingsBtn.getId() == View.NO_ID) settingsBtn.setId(View.generateViewId());
+                techniqueBtn.setNextFocusUpId(settingsBtn.getId());
+                settingsBtn.setNextFocusDownId(techniqueBtn.getId());
+            }
+        }
     }
 
     private void updateClock() {
@@ -616,7 +684,17 @@ public class MainActivity extends Activity {
             techniquesPanel.setOnTechniqueSelectedListener(new TechniquesPanel.OnTechniqueSelectedListener() {
                 @Override public void onTechniqueSelected(Technique technique) {
                     applyTechnique(technique.getId());
+                    View first = dockView.getFirstCard();
+                    if (first != null) {
+                        lastFocusedView = first;
+                        lastFocusedPackage = first.getTag() instanceof AppItem ? ((AppItem) first.getTag()).getPackageName() : null;
+                        lastFocusedIsLibrary = false;
+                    }
                     closeActivePanel();
+                    if (first != null) {
+                        first.requestFocus();
+                        chakraFocusView.setTargetView(first);
+                    }
                     chakraFocusView.triggerBurst();
                     audioController.playUiSound();
                 }
@@ -639,6 +717,8 @@ public class MainActivity extends Activity {
                     appManager.reloadAppsAsync(() -> {
                         if (!activityResumed || isDestroyed()) return;
                         dockView.render();
+            wireSpatialNavigation();
+                        wireSpatialNavigation();
                         toastOverlay.show("Архів застосунків оновлено", 2500);
                     });
                 }
@@ -800,6 +880,7 @@ public class MainActivity extends Activity {
         appManager.reloadAppsAsync(() -> {
             if (!activityResumed || isDestroyed()) return;
             dockView.render();
+            wireSpatialNavigation();
             if (activePanel == null && ambientOverlay.getVisibility() != View.VISIBLE) {
                 restoreHomeFocus();
             } else if (activePanel == libraryPanel && libraryPanel != null) {

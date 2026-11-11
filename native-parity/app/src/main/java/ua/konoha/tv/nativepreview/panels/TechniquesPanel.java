@@ -141,7 +141,7 @@ public class TechniquesPanel extends FrameLayout {
             int availableWidth = Math.max(100, sheetW - pad);
             int margin = KonohaTheme.dp(getContext(), 6);
             AdaptiveGridHelper.LayoutResult res = AdaptiveGridHelper.compute(
-                    availableWidth, KonohaTheme.dp(getContext(), 180), KonohaTheme.dp(getContext(), 320), margin, 1, 4
+                    availableWidth, KonohaTheme.dp(getContext(), 180), KonohaTheme.dp(getContext(), 320), margin, 1, 3
             );
             if (res.columnCount != computedColumnCount || res.cardWidthPx != computedCardWidth) {
                 computedColumnCount = res.columnCount;
@@ -179,19 +179,45 @@ public class TechniquesPanel extends FrameLayout {
         int netWidth = Math.max(100, sheetWidth - KonohaTheme.dp(getContext(), 72));
         int margin = KonohaTheme.dp(getContext(), 6);
         AdaptiveGridHelper.LayoutResult res = AdaptiveGridHelper.compute(
-                netWidth, KonohaTheme.dp(getContext(), 180), KonohaTheme.dp(getContext(), 320), margin, 1, 4
+                netWidth, KonohaTheme.dp(getContext(), 180), KonohaTheme.dp(getContext(), 320), margin, 1, 3
         );
         computedColumnCount = res.columnCount;
         computedCardWidth = res.cardWidthPx;
         grid.setColumnCount(computedColumnCount);
 
         View selectedCard = null;
-        for (Technique tech : CatalogData.TECHNIQUES) {
+        View[] cards = new View[CatalogData.TECHNIQUES.size()];
+        for (int i = 0; i < CatalogData.TECHNIQUES.size(); i++) {
+            Technique tech = CatalogData.TECHNIQUES.get(i);
             boolean isSel = tech.getId().equals(currentTechId);
             View card = createTechniqueCard(tech, isSel);
+            card.setId(View.generateViewId());
+            cards[i] = card;
             grid.addView(card);
             if (isSel) selectedCard = card;
         }
+
+        // Configure deterministic D-Pad spatial graph for the 3-column grid
+        for (int i = 0; i < cards.length; i++) {
+            int col = i % computedColumnCount;
+            if (col < computedColumnCount - 1 && i + 1 < cards.length) {
+                cards[i].setNextFocusRightId(cards[i + 1].getId());
+            }
+            if (col > 0 && i - 1 >= 0) {
+                cards[i].setNextFocusLeftId(cards[i - 1].getId());
+            }
+            if (i + computedColumnCount < cards.length) {
+                cards[i].setNextFocusDownId(cards[i + computedColumnCount].getId());
+            } else if (i == 7 || i == 8) {
+                cards[i].setNextFocusDownId(cards[9].getId());
+            }
+            if (i - computedColumnCount >= 0) {
+                cards[i].setNextFocusUpId(cards[i - computedColumnCount].getId());
+            } else if (i == 9) {
+                cards[i].setNextFocusUpId(cards[6].getId());
+            }
+        }
+
         if (selectedCard != null) {
             final View fCard = selectedCard;
             post(() -> fCard.requestFocus());
@@ -202,6 +228,7 @@ public class TechniquesPanel extends FrameLayout {
         LinearLayout card = new LinearLayout(getContext());
         card.setOrientation(LinearLayout.VERTICAL);
         card.setFocusable(true);
+        card.setFocusableInTouchMode(true);
         card.setClickable(true);
         card.setPadding(KonohaTheme.dp(getContext(), 8), KonohaTheme.dp(getContext(), 8),
                 KonohaTheme.dp(getContext(), 8), KonohaTheme.dp(getContext(), 8));

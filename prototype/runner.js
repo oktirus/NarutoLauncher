@@ -37,10 +37,15 @@ window.KonohaRunner=(()=>{
   const run=new Run(hero);const abort=new AbortController();
   root.innerHTML=`<div class="runner-toolbar"><div class="runner-characters" role="group" aria-label="Персонаж"><button data-run-hero="naruto">Наруто</button><button data-run-hero="gamabunta">Гамабунта</button></div><div class="runner-stats"><span>Шлях <strong id="run-score">00000</strong></span><span>Рекорд <strong id="run-best">00000</strong></span></div><button class="run-pause" data-run="pause" aria-label="Пауза">Ⅱ Пауза</button></div><div class="runner-stage"><canvas id="runner-canvas" width="1280" height="540" tabindex="0" aria-label="Шлях шинобі. OK або стрілка вгору — стрибок, вниз — підкат. Menu — пауза, Back — вихід."></canvas><div class="runner-message" id="run-message"><span id="run-subtitle">Тренування на світанку</span><h3 id="run-title">Ліс кличе.</h3><p id="run-description">Перестрибуй колоди й тренувальні стовпи.<br>Роби підкат під летючими сюрікенами.</p><button class="paper-button" data-run="start" id="run-start">OK · Рушай</button></div></div><div class="runner-bottom"><p id="run-status" role="status">Обери героя й починай тренування.</p><div class="runner-touch"><button data-run="duck">↓ Підкат</button><button data-run="jump">↑ Стрибок</button></div></div><p class="runner-help"><span><kbd>← →</kbd> герой до старту</span><span><kbd>OK / ↑ / Space</kbd> стрибок</span><span><kbd>↓</kbd> підкат</span><span><kbd>Menu / P</kbd> пауза</span><span><kbd>Back</kbd> вийти</span></p>`;
   const canvas=root.querySelector('#runner-canvas'),c=canvas.getContext('2d');let raf=0,last=0,previous='',lastScore=-1;
-  const images={};const paths={background:'../assets/game/konoha-forest.webp',naruto:window.KonohaRunnerSources.naruto.url,narutoSlide:window.KonohaRunnerSources.naruto.slide.url,gamabunta:window.KonohaRunnerSources.gamabunta.url,gamabuntaSlide:window.KonohaRunnerSources.gamabunta.slide.url};
-  for(const [name,url]of Object.entries(paths)){const img=new Image();images[name]=img;img.src=url;img.decode().then(()=>render()).catch(()=>{root.querySelector('#run-status').textContent='Частину малюнків не вдалося відкрити. Онови сторінку.';});}
+  const images={},sources={};let disposed=false;
+  const compact=innerWidth*Math.min(devicePixelRatio||1,2)/W*146<=256;
+  for(const [id,s]of Object.entries(window.KonohaRunnerSources)){const v=window.KonohaRuntimeAssets.game[id];sources[id]=compact?{...s,url:v.motion,cell:256,baseline:s.baseline/2,slide:{...s.slide,url:v.slide,cell:256,baseline:s.slide.baseline/2}}:s;}
+  function releaseImages(){for(const [name,img]of Object.entries(images)){img.removeAttribute('src');delete images[name];}}
+  function loadImage(name,url){if(images[name]?.getAttribute('src')===url)return;const img=new Image();images[name]=img;img.src=url;img.decode().then(()=>{if(!disposed&&images[name]===img)render();}).catch(()=>{if(!disposed&&images[name]===img){const status=root.querySelector('#run-status');if(status)status.textContent='Частину малюнків не вдалося відкрити. Онови сторінку.';}});}
+  function loadHero(){for(const name of Object.keys(images))if(name!=='background'&&name!==run.hero&&name!==run.hero+'Slide'){images[name].removeAttribute('src');delete images[name];}loadImage('background','../assets/game/konoha-forest.webp');loadImage(run.hero,sources[run.hero].url);loadImage(run.hero+'Slide',sources[run.hero].slide.url);}
+  loadHero();
   function best(){return records[run.hero]||0;}
-  function setHero(id){if(!heroes[id]||!['ready','over'].includes(run.status))return;save();run.hero=id;run.reset();try{localStorage.setItem(KEY+'.hero',id);}catch(_){}sync();render();}
+  function setHero(id){if(!heroes[id]||!['ready','over'].includes(run.status))return;save();run.hero=id;run.reset();loadHero();try{localStorage.setItem(KEY+'.hero',id);}catch(_){}sync();render();}
   function save(){const score=Math.floor(run.distance/10);if(score>best()){records[run.hero]=score;try{localStorage.setItem(KEY,JSON.stringify(records));}catch(_){root.querySelector('#run-status').textContent='Рекорд залишиться до закриття гри.';}}}
   function sync(){
    const state=run.status,score=Math.floor(run.distance/10);if(score!==lastScore){root.querySelector('#run-score').textContent=String(score).padStart(5,'0');lastScore=score;}
@@ -64,20 +69,20 @@ window.KonohaRunner=(()=>{
   function request(){if(!raf&&run.status==='running')raf=requestAnimationFrame(tick);}
   function tick(now){raf=0;const before=run.status;run.step((now-last)/1000);last=now;if(before==='running'&&run.status==='over'){save();options.onSound?.();}sync();render();request();}
   function render(){
-   if(!session||session.run!==run)return;const t=run.elapsed,d=run.distance;c.clearRect(0,0,W,H);
-   const bg=images.background;if(bg.complete&&bg.naturalWidth)c.drawImage(bg,0,0,W,H);else{const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#425957');g.addColorStop(.7,'#98a47c');g.addColorStop(1,'#29483c');c.fillStyle=g;c.fillRect(0,0,W,H);}
+   if(!session||session.run!==run||disposed)return;if(!canvas.width){canvas.width=W;canvas.height=H;}const t=run.elapsed,d=run.distance;c.clearRect(0,0,W,H);
+   const bg=images.background;if(bg?.complete&&bg.naturalWidth)c.drawImage(bg,0,0,W,H);else{const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#425957');g.addColorStop(.7,'#98a47c');g.addColorStop(1,'#29483c');c.fillStyle=g;c.fillRect(0,0,W,H);}
    c.fillStyle='#092f3438';c.fillRect(0,0,W,H);
    // The hand-painted forest stands on its own, without translucent tree overlays.
    c.fillStyle='#314939';c.beginPath();c.moveTo(0,GROUND-4);for(let x=0;x<=W;x+=16)c.lineTo(x,GROUND-4+Math.sin((x+d*.25)*.035)*3);c.lineTo(W,H);c.lineTo(0,H);c.fill();
    const road=c.createLinearGradient(0,GROUND,0,H);road.addColorStop(0,'#bd9a67');road.addColorStop(.13,'#977948');road.addColorStop(1,'#453e31');c.fillStyle=road;c.fillRect(0,GROUND,W,H-GROUND);c.fillStyle='#dac18c';c.fillRect(0,GROUND,W,3);
    for(let k=0;k<45;k++){const x=((k*91-d*1.02)%W+W)%W,y=GROUND+15+k%4*21;c.fillStyle=k%3?'#d1af6f55':'#342d2588';c.fillRect(x,y,12+k%7*2,2);}
    for(const o of run.obstacles)obstacle(o,t);
-   const duck=run.duck>0,air=run.y>1,gama=run.hero==='gamabunta',pose=poseFor(run),slide=pose.mode==='slide',art=slide?window.KonohaRunnerSources[run.hero].slide:window.KonohaRunnerSources[run.hero],size=slide?art.drawSize:gama?142:116;
+   const duck=run.duck>0,air=run.y>1,gama=run.hero==='gamabunta',pose=poseFor(run),slide=pose.mode==='slide',art=slide?sources[run.hero].slide:sources[run.hero],size=slide?art.drawSize:gama?142:116;
    const bob=['running','paused'].includes(run.status)&&!air&&!duck&&!options.reduced?.()?(gama?pose.hop:Math.sin(t*22)*1.2):0;
    c.save();c.globalAlpha=.27;c.fillStyle='#092523';c.beginPath();c.ellipse(211,GROUND+3,(gama?58:35)*(1-run.y/400),9,0,0,Math.PI*2);c.fill();c.restore();
    c.save();c.translate(gama?222:207,GROUND-run.y+bob);
    const img=images[slide?run.hero+'Slide':run.hero];
-   if(img.complete&&img.naturalWidth){const frame=pose.frame,cell=art.cell;c.drawImage(img,frame%art.columns*cell,Math.floor(frame/art.columns)*cell,cell,cell,-size/2,-size*art.baseline/cell,size,size);}
+   if(img?.complete&&img.naturalWidth){const frame=pose.frame,cell=art.cell;c.drawImage(img,frame%art.columns*cell,Math.floor(frame/art.columns)*cell,cell,cell,-size/2,-size*art.baseline/cell,size,size);}
    c.restore();
    if(run.status==='running'&&!air&&!options.reduced?.()){for(let k=0;k<7;k++){const age=(t*2+k*.14)%1;c.globalAlpha=(1-age)*.3;c.fillStyle='#ddcba2';c.beginPath();c.ellipse(169-age*60,GROUND-3-age*12,3+age*8,2+age*4,0,0,Math.PI*2);c.fill();}c.globalAlpha=1;}
    if(slide&&!options.reduced?.()){c.save();c.lineWidth=1.3;for(let k=0;k<6;k++){const age=(t*3+k*.17)%1;c.globalAlpha=(1-age)*Math.min(1,run.duck/.12)*.45;c.strokeStyle=k%2?'#d4c198':'#8c734e';c.beginPath();c.moveTo(174-age*62,GROUND-2-k%3*2);c.lineTo(150-age*90,GROUND-k%3*2);c.stroke();}c.restore();}
@@ -98,9 +103,9 @@ window.KonohaRunner=(()=>{
   }
   root.addEventListener('click',e=>{const button=e.target.closest('[data-run],[data-run-hero]');if(!button)return;if(button.dataset.runHero)setHero(button.dataset.runHero);else if(button.dataset.run==='start')go();else if(button.dataset.run==='jump')jump();else if(button.dataset.run==='duck')run.crouch();else togglePause();render();},{signal:abort.signal});
   canvas.addEventListener('pointerdown',e=>{if(e.button===0){e.preventDefault();jump();}},{signal:abort.signal});
-  session={run,abort,pause,handleKey,render,dispose(){save();cancelAnimationFrame(raf);abort.abort();},snapshot:()=>({...run.snapshot(),pose:poseFor(run),records:{...records},animating:!!raf})};
+  session={run,abort,pause,handleKey,render,trim(){pause();releaseImages();canvas.width=canvas.height=0;},restore(){loadHero();render();},dispose(){save();disposed=true;cancelAnimationFrame(raf);abort.abort();releaseImages();canvas.width=canvas.height=0;},snapshot:()=>({...run.snapshot(),pose:poseFor(run),records:{...records},animating:!!raf,images:Object.keys(images),cell:sources[run.hero].cell})};
   sync();render();requestAnimationFrame(()=>{if(session?.run===run)canvas.focus({preventScroll:true});});
  }
  function unmount(){session?.dispose();session=null;}
- return {Run,heroes,overlap,poseFor,mount,unmount,pause:()=>session?.pause(),handleKey:key=>session?.handleKey(key)||false,snapshot:()=>session?.snapshot()||null};
+ return {Run,heroes,overlap,poseFor,mount,unmount,pause:()=>session?.pause(),trim:()=>session?.trim(),restore:()=>session?.restore(),handleKey:key=>session?.handleKey(key)||false,snapshot:()=>session?.snapshot()||null};
 })();

@@ -124,12 +124,34 @@ public class ScenesPanel extends FrameLayout {
         grid.setColumnCount(computedColumnCount);
 
         View activeCard = null;
-        for (Scene scene : CatalogData.SCENES) {
+        View[] cards = new View[CatalogData.SCENES.size()];
+        for (int i = 0; i < CatalogData.SCENES.size(); i++) {
+            Scene scene = CatalogData.SCENES.get(i);
             boolean isSel = scene.getId().equals(currentSceneId);
             View card = createSceneCard(scene, isSel);
+            card.setId(View.generateViewId());
+            cards[i] = card;
             grid.addView(card);
             if (isSel && activeCard == null) activeCard = card;
         }
+
+        // Configure deterministic D-Pad spatial graph for the 3-column grid
+        for (int i = 0; i < cards.length; i++) {
+            int col = i % computedColumnCount;
+            if (col < computedColumnCount - 1 && i + 1 < cards.length) {
+                cards[i].setNextFocusRightId(cards[i + 1].getId());
+            }
+            if (col > 0 && i - 1 >= 0) {
+                cards[i].setNextFocusLeftId(cards[i - 1].getId());
+            }
+            if (i + computedColumnCount < cards.length) {
+                cards[i].setNextFocusDownId(cards[i + computedColumnCount].getId());
+            }
+            if (i - computedColumnCount >= 0) {
+                cards[i].setNextFocusUpId(cards[i - computedColumnCount].getId());
+            }
+        }
+
         if (activeCard != null) {
             final View fCard = activeCard;
             post(() -> fCard.requestFocus());

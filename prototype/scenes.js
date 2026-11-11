@@ -9,9 +9,9 @@ window.KonohaScenes=[
     "hero": false,
     "title": "Воля<br><em>вогню.</em>",
     "description": "Після довгого дня шлях веде додому.<br>У тихому селі теж живе воля вогню.",
-    "image": "v11/scene-dusk.jpg?v=841f75d99388",
-    "mobilePosition": "68% center",
-    "cardPosition": "72% 34%",
+    "image": "v16/scene-dusk.jpg?v=b4f7056de2d4",
+    "mobilePosition": "76% center",
+    "cardPosition": "76% 36%",
     "particles": "leaf",
     "palette": [
       "#e9af78",
@@ -19,21 +19,21 @@ window.KonohaScenes=[
     ]
   },
   {
-    "id": "night",
-    "name": "Човник під місяцем",
-    "caption": "Мала обіцянка",
-    "mood": "Тиха ріка",
-    "color": "#8bcbe5",
+    "id": "team7",
+    "name": "Команда №7",
+    "caption": "Перше спільне фото",
+    "mood": "Наруто, Сакура, Саске й Какаші",
+    "color": "#b5cc99",
     "hero": false,
-    "title": "Воля<br><em>вогню.</em>",
-    "description": "Паперовий човник пливе крізь ніч.<br>Надія знаходить шлях навіть у темряві.",
-    "image": "v11/scene-night.jpg?v=945eb97f8cfe",
-    "cardPosition": "73% 34%",
-    "mobilePosition": "70% center",
-    "particles": "ember",
+    "title": "Разом<br><em>сильніші.</em>",
+    "description": "Класичне спільне фото команди №7.",
+    "image": "v23/scene-team7.jpg?v=df1c0692c744",
+    "cardPosition": "77% 34%",
+    "mobilePosition": "79% center",
+    "particles": "leaf",
     "palette": [
-      "#b3dce8",
-      "#b7c5e4"
+      "#b8cc8a",
+      "#91b1a0"
     ]
   },
   {
@@ -53,6 +53,24 @@ window.KonohaScenes=[
       "#d7c59d",
       "#a3b89a"
     ]
+  },
+  {
+    "id": "ramen",
+    "name": "Рамен в Ічіраку",
+    "caption": "Смак дому",
+    "mood": "Рамен після довгого дня",
+    "color": "#eda653",
+    "hero": false,
+    "title": "Смак<br><em>дому.</em>",
+    "description": "Наруто їсть рамен біля стійки Ічіраку.",
+    "particles": "dust",
+    "palette": [
+      "#f0c88e",
+      "#e6b775"
+    ],
+    "image": "v18/scene-ramen.jpg?v=008c9f8f8e16",
+    "mobilePosition": "83% center",
+    "cardPosition": "80% 35%"
   },
   {
     "id": "kakashi",
@@ -75,15 +93,15 @@ window.KonohaScenes=[
   {
     "id": "sakura",
     "name": "Сакура",
-    "caption": "Там, де життя розквітає",
-    "mood": "Сила зцілення",
+    "caption": "Лікування чакрою",
+    "mood": "Практика медичного ніндзюцу",
     "color": "#f5b5c8",
     "hero": true,
     "title": "Сила<br><em>зцілення.</em>",
-    "description": "Сила — берегти життя.<br>Навіть після бурі Коноха знову розквітає.",
-    "image": "v15/scene-sakura.jpg?v=aecce8979a89",
-    "mobilePosition": "78% center",
-    "cardPosition": "77% 35%"
+    "description": "Сакура відпрацьовує медичну техніку за столом.",
+    "image": "v22/scene-sakura.jpg?v=655826140cdc",
+    "mobilePosition": "80% center",
+    "cardPosition": "78% 30%"
   },
   {
     "id": "sasuke",
@@ -106,16 +124,16 @@ window.KonohaScenes=[
   {
     "id": "gaara",
     "name": "Гаара",
-    "caption": "Вартовий Суни",
-    "mood": "Вечір над піщаним селом",
+    "caption": "Відповідальність за Суну",
+    "mood": "Кабінет Казекаге",
     "village": "砂隠れの里",
     "color": "#e9bc83",
     "hero": true,
-    "title": "Пісок<br><em>і спокій.</em>",
+    "title": "П’ятий<br><em>Казекаге.</em>",
     "description": "Сила знаходить сенс у турботі.<br>Пісок оберігає село, що стало домом.",
-    "image": "v12/scene-gaara.jpg?v=8fdefbf4b147",
-    "cardPosition": "76% 32%",
-    "mobilePosition": "77% center",
+    "image": "v16/scene-gaara.jpg?v=2b6564d82c67",
+    "cardPosition": "76% 36%",
+    "mobilePosition": "76% center",
     "particles": "dust",
     "palette": [
       "#e3c39a",
@@ -161,20 +179,20 @@ window.KonohaScenes=[
   {
     "id": "rocklee",
     "name": "Рок Лі",
-    "caption": "Ще один крок. Ще одна спроба.",
-    "mood": "Світанкове тренування",
+    "caption": "Ще один стрибок",
+    "mood": "Ранкове тренування зі скакалкою",
     "color": "#b8d68b",
     "hero": true,
     "title": "Сила<br><em>зусиль.</em>",
-    "description": "Наполегливість перетворюється на силу.<br>Кожна спроба наближає до мрії.",
+    "description": "Ритм, витривалість і щоденна праця.",
     "particles": "dust",
     "palette": [
       "#d4b68b",
       "#b6c78d"
     ],
-    "cardPosition": "66% 32%",
-    "mobilePosition": "68% center",
-    "image": "v9/rocklee.jpg?v=c49b1d72dbc5"
+    "cardPosition": "77% 32%",
+    "mobilePosition": "81% center",
+    "image": "v17/scene-rocklee.jpg?v=d328838983f7"
   },
   {
     "id": "neji",
@@ -216,19 +234,19 @@ window.KonohaScenes=[
     "id": "jiraiya",
     "name": "Джирая",
     "caption": "Наступна сторінка",
-    "mood": "Подорожні записи біля ріки",
+    "mood": "Нотатки і три миски рамену",
     "color": "#d2b18a",
     "hero": true,
     "title": "Історія<br><em>триває.</em>",
     "description": "Кожна подорож залишає історію.<br>Найважливіші слова ще попереду.",
-    "cardPosition": "75% 31%",
-    "mobilePosition": "79% center",
+    "cardPosition": "76% 36%",
+    "mobilePosition": "88% center",
     "particles": "leaf",
     "palette": [
       "#a8be9a",
       "#cab69b"
     ],
-    "image": "v13/scene-jiraiya.jpg?v=3e25f99772bb"
+    "image": "v16/scene-jiraiya.jpg?v=0cc4b2aabcdf"
   },
   {
     "id": "itachi",
@@ -268,38 +286,38 @@ window.KonohaScenes=[
   },
   {
     "id": "minato",
-    "name": "Мінато",
-    "caption": "Перед першим кроком",
-    "mood": "Вітер на тренувальному полі",
+    "name": "Мінато й Кушіна",
+    "caption": "Тихі миті разом",
+    "mood": "Разом на лісовій галявині",
     "color": "#e3d38e",
     "hero": true,
     "title": "Мить<br><em>рішення.</em>",
-    "description": "Точність починається зі спокою.<br>Одна мить може зберегти майбутнє.",
-    "cardPosition": "75% 31%",
-    "mobilePosition": "80% center",
+    "description": "Мінато та Кушіна відпочивають після тренування.",
+    "cardPosition": "71% 28%",
+    "mobilePosition": "75% center",
     "particles": "leaf",
     "palette": [
       "#d1cd95",
       "#a9ba92"
     ],
-    "image": "v13/scene-minato.jpg?v=ea73f03047b4"
+    "image": "v21/scene-minato.jpg?v=6aa11e71c4b3"
   },
   {
     "id": "sai",
     "name": "Сай",
-    "caption": "Коли малюнок оживає",
-    "mood": "Туш і літнє небо",
+    "caption": "Малюнок здіймається в небо",
+    "mood": "Політ на чорнильному птахові",
     "color": "#b9cddd",
     "hero": true,
     "title": "Мова<br><em>почуттів.</em>",
-    "description": "На чистому аркуші з'являється крило.<br>Малюнок говорить про те, що важко назвати.",
-    "cardPosition": "77% 32%",
-    "mobilePosition": "77% center",
+    "description": "Сай летить над лісом на птахові, створеному чорнильною технікою.",
+    "cardPosition": "77% 24%",
+    "mobilePosition": "80% center",
     "particles": "leaf",
     "palette": [
       "#b1c6b8",
       "#b4cadb"
     ],
-    "image": "v14/scene-sai.jpg?v=8aea2f44972c"
+    "image": "v20/scene-sai.jpg?v=37a209548db4"
   }
 ];
