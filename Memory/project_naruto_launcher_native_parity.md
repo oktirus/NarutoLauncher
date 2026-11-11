@@ -151,5 +151,19 @@
 - **`SettingsPanel.java`:** Випадаючі списки переведено в компактний горизонтальний інлайн-формат.
 - **Збірка:** `KonohaNative-1.0.0-debug.apk` (SHA256: `A47D685C0723B486F0BCE0FE10C8668635D7340B244641AA9DA043207F4D903F`). Успішно встановлено на телевізор Lenovo.
 
+## 13. 100% Синхронізована сесія та незалежний аудит паритету (2026-11-11)
+- **Детермінований просторовий граф D-Pad:** У `MainActivity.java` реалізовано `wireSpatialNavigation()`, що зв'язує Card 0 $\leftrightarrow$ `sceneChoiceBtn` $\leftrightarrow$ `brandBtn` $\leftrightarrow$ `gameBtn` $\leftrightarrow$ `settingsBtn` $\leftrightarrow$ `techniqueBtn` $\leftrightarrow$ Card 6.
+- **Панель технік:** Зафіксовано 3-колонкову сітку (`computedColumnCount = 3`) у `TechniquesPanel.java`, повернення фокусу на Card 0 при виборі будь-якої техніки.
+- **Синхронізований сценарій:** `NarutoLauncher/run_comparative_session.js` (145 кроків) одночасно керує Web (Playwright) та Android TV (ADB), проходячи всі 10 технік від краю до краю, бібліотеку, галерею сцен, налаштування та раннер.
+- **Відео:** `compare_full_launcher_side_by_side.mp4` (4m 08s, 2560×720 side-by-side).
+- **Git:** Закомічено та запушено в `origin/main` (комміт `29b7b8c`).
+- **Незалежний сліпий аудит:** Subagent Antigravity (`pro`) провів покадровий аналіз 53 пар кадрів:
+  - Підсумковий бал: **96.8% (EXCELLENT / PRODUCTION GRADE)**
+  - Синхронізація відгуку пульта: **100.0% PASS** (145/145 кроків)
+  - 10 технік чакри: **97.2% PASS**
+  - Фізика Гамабунти: **98.0% PASS**
+  - Гігієна тексту: **99.0% PASS** (темних рамок немає).
+
+
 
 
