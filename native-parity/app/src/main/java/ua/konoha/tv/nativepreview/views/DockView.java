@@ -182,7 +182,7 @@ public class DockView extends HorizontalScrollView {
 
         // Emblem (.app-emblem, contain centered)
         ImageView iconView = new ImageView(getContext());
-        LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(KonohaTheme.dp(getContext(), 92), KonohaTheme.dp(getContext(), 92));
+        LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(KonohaTheme.dp(getContext(), 118), KonohaTheme.dp(getContext(), 118));
         iconView.setLayoutParams(iconLp);
         iconView.setScaleType(ImageView.ScaleType.FIT_CENTER);
 
@@ -218,10 +218,10 @@ public class DockView extends HorizontalScrollView {
         });
 
         card.setOnFocusChangeListener((v, hasFocus) -> {
-            v.animate()
-                    .scaleX(hasFocus ? 1.15f : 1.0f)
-                    .scaleY(hasFocus ? 1.15f : 1.0f)
-                    .translationY(hasFocus ? -KonohaTheme.dp(getContext(), 8) : 0f)
+            iconView.animate()
+                    .scaleX(hasFocus ? 1.045f : 1.0f)
+                    .scaleY(hasFocus ? 1.045f : 1.0f)
+                    .translationY(hasFocus ? -KonohaTheme.dp(getContext(), 5) : 0f)
                     .setDuration(180)
                     .start();
 
@@ -254,7 +254,7 @@ public class DockView extends HorizontalScrollView {
         card.setLayoutParams(lp);
 
         ImageView iconView = new ImageView(getContext());
-        LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(KonohaTheme.dp(getContext(), 92), KonohaTheme.dp(getContext(), 92));
+        LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(KonohaTheme.dp(getContext(), 118), KonohaTheme.dp(getContext(), 118));
         iconView.setLayoutParams(iconLp);
         iconView.setScaleType(ImageView.ScaleType.FIT_CENTER);
 
@@ -286,10 +286,10 @@ public class DockView extends HorizontalScrollView {
         });
 
         card.setOnFocusChangeListener((v, hasFocus) -> {
-            v.animate()
-                    .scaleX(hasFocus ? 1.15f : 1.0f)
-                    .scaleY(hasFocus ? 1.15f : 1.0f)
-                    .translationY(hasFocus ? -KonohaTheme.dp(getContext(), 8) : 0f)
+            iconView.animate()
+                    .scaleX(hasFocus ? 1.045f : 1.0f)
+                    .scaleY(hasFocus ? 1.045f : 1.0f)
+                    .translationY(hasFocus ? -KonohaTheme.dp(getContext(), 5) : 0f)
                     .setDuration(180)
                     .start();
 
@@ -366,6 +366,11 @@ public class DockView extends HorizontalScrollView {
                     }
                     if (targets != null && finalBmp != null) {
                         for (ImageView target : targets) target.setImageBitmap(finalBmp);
+                    } else if (targets != null) {
+                        Drawable sys = app.getSystemIcon();
+                        if (sys != null) {
+                            for (ImageView target : targets) target.setImageDrawable(sys);
+                        }
                     }
                 });
             });

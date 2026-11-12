@@ -177,6 +177,7 @@ public class MainActivity extends Activity {
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT
         ));
 
+        mainShell.setElevation(10f);
         rootLayout.addView(mainShell, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT
         ));
@@ -184,6 +185,7 @@ public class MainActivity extends Activity {
         // Контейнер модальних панелей
         modalContainer = new FrameLayout(this);
         modalContainer.setVisibility(View.GONE);
+        modalContainer.setElevation(50f);
         rootLayout.addView(modalContainer, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT
         ));
@@ -191,6 +193,7 @@ public class MainActivity extends Activity {
         // Оверлей тихої миті
         ambientOverlay = new AmbientOverlay(this);
         ambientOverlay.setVisibility(View.GONE);
+        ambientOverlay.setElevation(60f);
         ambientOverlay.setOnAmbientExitListener(this::exitAmbient);
         rootLayout.addView(ambientOverlay, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT
@@ -312,7 +315,7 @@ public class MainActivity extends Activity {
         hero.addView(heroDescView);
 
         quoteAuthorView = new TextView(this);
-        quoteAuthorView.setTextColor(KonohaTheme.COLOR_ORANGE);
+        quoteAuthorView.setTextColor(Color.parseColor("#b9cac1"));
         quoteAuthorView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         quoteAuthorView.setTypeface(KonohaTheme.getNunitoBold(this));
         quoteAuthorView.setPadding(0, dp(2), 0, dp(10));

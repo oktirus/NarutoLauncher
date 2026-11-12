@@ -262,9 +262,10 @@ public class TechniqueRenderer {
     }
 
     public void triggerGamabuntaJump(PointF from, PointF to, int direction, long now) {
-        frogState.fromPos.set(from.x, from.y - 20);
-        frogState.toPos.set(to.x, to.y - 20);
-        frogState.radius = 45f;
+        float r = 45f;
+        frogState.fromPos.set(from.x + r * 0.5f, from.y - r * 0.26f);
+        frogState.toPos.set(to.x + r * 0.5f, to.y - r * 0.26f);
+        frogState.radius = r;
         frogState.startTime = now;
         double dist = Math.hypot(to.x - from.x, to.y - from.y);
         frogState.duration = (long) Math.min(700, Math.max(370, dist * 1.5));
@@ -398,6 +399,26 @@ public class TechniqueRenderer {
         paint.setAlpha(220);
         canvas.drawCircle(cx, cy, r * 1.12f, paint);
         paint.setShader(null);
+
+        if ("summoning".equals(id) || "hiraishin".equals(id)) {
+            strokePaint.setStyle(Paint.Style.STROKE);
+            strokePaint.setColor("summoning".equals(id) ? Color.parseColor("#263c35") : Color.parseColor("#fae9a7"));
+            strokePaint.setAlpha((int) (0.6f * 255));
+            strokePaint.setStrokeWidth(dp(1.1f));
+            for (int k = 0; k < 12; k++) {
+                canvas.save();
+                canvas.rotate(k * 30f, cx, cy);
+                canvas.drawLine(cx + r * 0.19f, cy, cx + r * 0.38f, cy, strokePaint);
+                canvas.drawLine(cx + r * 0.42f, cy + r * 0.08f, cx + r * 0.67f, cy + r * 0.08f, strokePaint);
+                canvas.drawLine(cx + r * 0.67f, cy - r * 0.06f, cx + r * 0.93f, cy - r * 0.06f, strokePaint);
+                canvas.restore();
+            }
+            strokePaint.setAlpha((int) (0.26f * 255));
+            strokePaint.setStrokeWidth(r * 0.07f);
+            canvas.drawCircle(cx, cy, r * 0.32f, strokePaint);
+            canvas.drawCircle(cx, cy, r * 0.77f, strokePaint);
+        }
+
         canvas.restore();
     }
 
@@ -839,7 +860,50 @@ public class TechniqueRenderer {
         canvas.save();
         canvas.translate(cx, cy);
 
-        // Печатка призову
+        // 1. Внутрішнє енергетичне ядро чакри (core: summoning)
+        drawTechniqueCore(canvas, "summoning", 0, 0, r, t);
+
+        // 2. Растрова платівка ефекту призову (effect-summoning.webp)
+        Bitmap bmp = ensureBitmap("summoning");
+        if (bmp != null && !bmp.isRecycled()) {
+            canvas.save();
+            float size = r * 2.46f * (1.0f + (isPreview ? 0f : (float) (Math.sin(t * 1.5) * 0.016 + burstLife * 0.035)));
+            paint.reset();
+            paint.setAntiAlias(true);
+            paint.setFilterBitmap(true);
+            paint.setAlpha(214); // 0.84f * 255
+            dstRect.set(-size / 2, -size / 2, size / 2, size / 2);
+            canvas.drawBitmap(bmp, null, dstRect, paint);
+            canvas.restore();
+        } else {
+            drawSummoningFallback(canvas, r, t);
+        }
+
+        // 3. Акценти (accents: summoning — хмарки диму призову з technique-art.js:122)
+        fillPaint.setStyle(Paint.Style.FILL);
+        fillPaint.setColor(Color.parseColor("#dddaca"));
+        for (int k = 0; k < 7; k++) {
+            double phase = (t * 0.27 + (double) k / 7.0) % 1.0;
+            double a = k * TAU / 7.0;
+            fillPaint.setAlpha((int) ((1.0 - phase) * 0.3 * 255));
+            float px = (float) (Math.cos(a) * r * (1.0 + phase * 0.25));
+            float py = (float) (Math.sin(a) * r * (1.0 + phase * 0.25) - phase * r * 0.12);
+            canvas.drawCircle(px, py, (float) (r * (0.07 + phase * 0.09)), fillPaint);
+        }
+
+        // 4. Енергетична хвиля вибору (burst ring)
+        if (burstLife > 0f) {
+            strokePaint.setStyle(Paint.Style.STROKE);
+            strokePaint.setColor(Color.parseColor("#e0d4b8"));
+            strokePaint.setStrokeWidth(dp(1.2f));
+            strokePaint.setAlpha((int) (burstLife * 0.5f * 255));
+            canvas.drawCircle(0, 0, r * (1.04f + (1.0f - burstLife) * 0.14f), strokePaint);
+        }
+
+        canvas.restore();
+    }
+
+    private void drawSummoningFallback(Canvas canvas, float r, double t) {
         canvas.save();
         canvas.rotate((float) Math.toDegrees(Math.sin(t * 0.3) * 0.025));
         strokePaint.setStyle(Paint.Style.STROKE);
@@ -867,46 +931,67 @@ public class TechniqueRenderer {
             canvas.restore();
         }
         canvas.restore();
-
-        // Хмарки диму призову
-        fillPaint.setStyle(Paint.Style.FILL);
-        fillPaint.setColor(Color.parseColor("#dddaca"));
-        for (int k = 0; k < 7; k++) {
-            double phase = (t * 0.27 + (double) k / 7.0) % 1.0;
-            double a = k * TAU / 7.0;
-            fillPaint.setAlpha((int) ((1.0 - phase) * 75));
-            float px = (float) (Math.cos(a) * r * (1.0 + phase * 0.25));
-            float py = (float) (Math.sin(a) * r * (1.0 + phase * 0.25) - phase * r * 0.12);
-            canvas.drawCircle(px, py, (float) (r * (0.07 + phase * 0.09)), fillPaint);
-        }
-
-        // Маленька жабка призову праворуч знизу
-        canvas.save();
-        canvas.translate(r * 0.72f, r * 0.64f);
-        fillPaint.setColor(Color.parseColor("#77906b"));
-        fillPaint.setAlpha(255);
-        strokePaint.setColor(Color.parseColor("#d0c69b"));
-        strokePaint.setStrokeWidth(1.5f);
-        tempOval.set(-r * 0.2f, -r * 0.12f, r * 0.2f, r * 0.12f);
-        canvas.drawOval(tempOval, fillPaint);
-        canvas.drawOval(tempOval, strokePaint);
-
-        for (int s = -1; s <= 1; s += 2) {
-            canvas.drawCircle(s * r * 0.12f, -r * 0.09f, r * 0.06f, fillPaint);
-            canvas.drawCircle(s * r * 0.12f, -r * 0.09f, r * 0.06f, strokePaint);
-            fillPaint.setColor(Color.parseColor("#e7d692"));
-            canvas.drawRect(s * r * 0.12f - r * 0.015f, -r * 0.105f, s * r * 0.12f + r * 0.01f, -r * 0.08f, fillPaint);
-            fillPaint.setColor(Color.parseColor("#77906b"));
-        }
-        canvas.restore();
-
-        canvas.restore();
     }
 
     private void drawHiraishin(Canvas canvas, float cx, float cy, float r, double t, float burstLife, boolean isPreview) {
         canvas.save();
         canvas.translate(cx, cy);
 
+        // 1. Внутрішнє енергетичне ядро чакри (core: hiraishin)
+        drawTechniqueCore(canvas, "hiraishin", 0, 0, r, t);
+
+        // 2. Растрова платівка Хірайшина (effect-hiraishin.webp з кунаєм та формулою Мінато)
+        Bitmap bmp = ensureBitmap("hiraishin");
+        if (bmp != null && !bmp.isRecycled()) {
+            canvas.save();
+            float rot = (float) ((Math.toDegrees(Math.sin(t) * 0.018)) % 360.0);
+            canvas.rotate(rot);
+            float size = r * 2.46f * (1.0f + (isPreview ? 0f : (float) (Math.sin(t * 1.5) * 0.016 + burstLife * 0.035)));
+            paint.reset();
+            paint.setAntiAlias(true);
+            paint.setFilterBitmap(true);
+            paint.setAlpha(214); // 0.84f * 255
+            dstRect.set(-size / 2, -size / 2, size / 2, size / 2);
+            canvas.drawBitmap(bmp, null, dstRect, paint);
+            canvas.restore();
+        } else {
+            drawHiraishinFallback(canvas, r, t);
+        }
+
+        // 3. Акценти Жовтої блискавки (accents: hiraishin з technique-art.js:124-126)
+        strokePaint.setStyle(Paint.Style.STROKE);
+        strokePaint.setStrokeCap(Paint.Cap.ROUND);
+        for (int k = 0; k < 6; k++) {
+            double a = k * TAU / 6.0 + t * 1.8;
+            strokePaint.setColor(Color.parseColor("#ffe57f"));
+            strokePaint.setStrokeWidth(dp(2.2f));
+            strokePaint.setAlpha((int) (0.45f * 255));
+            float rad = r * (0.92f + (k % 2) * 0.14f);
+            tempOval.set(-rad, -rad, rad, rad);
+            canvas.drawArc(tempOval, (float) Math.toDegrees(a), (float) Math.toDegrees(0.45), false, strokePaint);
+        }
+        strokePaint.setColor(Color.parseColor("#fff0b5"));
+        strokePaint.setStrokeWidth(dp(0.9f));
+        strokePaint.setAlpha((int) ((0.25f + 0.12f * Math.sin(t * 1.7)) * 255));
+        for (int k = 0; k < 6; k++) {
+            double a = k * TAU / 6.0;
+            canvas.drawLine((float) (Math.cos(a) * r * 0.82), (float) (Math.sin(a) * r * 0.82),
+                    (float) (Math.cos(a + 0.05) * r), (float) (Math.sin(a + 0.05) * r), strokePaint);
+        }
+
+        // 4. Енергетична хвиля вибору (burst ring)
+        if (burstLife > 0f) {
+            strokePaint.setStyle(Paint.Style.STROKE);
+            strokePaint.setColor(Color.parseColor("#ffd700"));
+            strokePaint.setStrokeWidth(dp(1.2f));
+            strokePaint.setAlpha((int) (burstLife * 0.5f * 255));
+            canvas.drawCircle(0, 0, r * (1.04f + (1.0f - burstLife) * 0.14f), strokePaint);
+        }
+
+        canvas.restore();
+    }
+
+    private void drawHiraishinFallback(Canvas canvas, float r, double t) {
         // 4 кутові скоби формули просторово-часового бар'єра
         strokePaint.setStyle(Paint.Style.STROKE);
         strokePaint.setColor(Color.parseColor("#ffe6a0"));
@@ -925,48 +1010,6 @@ public class TechniqueRenderer {
             canvas.drawPath(sealPath, strokePaint);
             canvas.restore();
         }
-
-        // Обертові спалахи швидкості Жовтої блискавки Конохи
-        for (int i = 0; i < 3; i++) {
-            canvas.save();
-            float travel = (float) (((t * 1.8 + i * 0.33) % 1.0) * 360f);
-            canvas.rotate(travel);
-            strokePaint.setColor(Color.parseColor("#ffe57f"));
-            strokePaint.setStrokeWidth(3.5f);
-            strokePaint.setAlpha(220);
-            tempOval.set(-r * 1.02f, -r * 1.02f, r * 1.02f, r * 1.02f);
-            canvas.drawArc(tempOval, 0, 45f, false, strokePaint);
-            canvas.restore();
-        }
-
-        // Трипроменевий кунай Мінато праворуч знизу
-        canvas.save();
-        canvas.translate(r * 0.72f, r * 0.63f);
-        canvas.rotate((float) (-35f + Math.sin(t) * 2.5f));
-        strokePaint.setColor(Color.parseColor("#fff0bc"));
-        strokePaint.setStrokeWidth(2.0f);
-        fillPaint.setStyle(Paint.Style.FILL);
-        fillPaint.setColor(Color.parseColor("#78613b"));
-
-        kunaiPath.reset();
-        kunaiPath.moveTo(0, -r * 0.48f);
-        kunaiPath.lineTo(r * 0.08f, -r * 0.2f);
-        kunaiPath.lineTo(r * 0.22f, -r * 0.35f);
-        kunaiPath.lineTo(r * 0.17f, -r * 0.1f);
-        kunaiPath.lineTo(0, 0);
-        kunaiPath.lineTo(-r * 0.17f, -r * 0.1f);
-        kunaiPath.lineTo(-r * 0.22f, -r * 0.35f);
-        kunaiPath.lineTo(-r * 0.08f, -r * 0.2f);
-        kunaiPath.close();
-
-        canvas.drawPath(kunaiPath, fillPaint);
-        canvas.drawPath(kunaiPath, strokePaint);
-
-        canvas.drawLine(0, 0, 0, r * 0.24f, strokePaint);
-        canvas.drawCircle(0, r * 0.29f, r * 0.055f, strokePaint);
-        canvas.restore();
-
-        canvas.restore();
     }
 
     public void drawTrail(Canvas canvas, String id, float ax, float ay, float bx, float by, float life, double t) {
@@ -1131,6 +1174,9 @@ public class TechniqueRenderer {
      * C11: Гамабунта — виправлено протилежні орієнтації спрайтів, відновлення alpha 255
      */
     private void drawGamabunta(Canvas canvas, float cx, float cy, float r, long timeMs, boolean isPreview) {
+        float perchX = cx + r * 0.5f;
+        float perchY = cy - r * 0.26f;
+
         if (isPreview) {
             Bitmap idle = ensureBitmap("gamabunta-idle");
             if (idle != null && !idle.isRecycled()) {
@@ -1138,16 +1184,40 @@ public class TechniqueRenderer {
                 paint.setAntiAlias(true);
                 paint.setFilterBitmap(true);
                 paint.setAlpha(255);
-                float size = r * 1.6f;
-                dstRect.set(cx - size / 2, cy - size * 0.7f, cx + size / 2, cy + size * 0.3f);
+                float size = r * 1.45f;
+                dstRect.set(perchX - size / 2, perchY - size * 0.88f, perchX + size / 2, perchY + size * 0.12f);
                 canvas.drawBitmap(idle, null, dstRect, paint);
             }
             return;
         }
 
+        // 0. Summon landing seal on target card
+        canvas.save();
+        canvas.translate(cx, cy);
+        strokePaint.setStyle(Paint.Style.STROKE);
+        strokePaint.setColor(Color.parseColor("#c9b18a"));
+        strokePaint.setStrokeWidth(1.1f);
+        strokePaint.setAlpha((int) (0.25f * 255));
+        canvas.drawCircle(0, 0, r * 1.14f, strokePaint);
+        canvas.drawCircle(0, 0, r * 1.28f, strokePaint);
+        for (int k = 0; k < 8; k++) {
+            canvas.save();
+            canvas.rotate(k * 45f);
+            sealPath.reset();
+            sealPath.moveTo(r * 1.03f, 0);
+            sealPath.lineTo(r * 1.18f, 0);
+            sealPath.lineTo(r * 1.18f, r * 0.055f);
+            sealPath.lineTo(r * 1.32f, r * 0.055f);
+            sealPath.moveTo(r * 1.22f, -r * 0.04f);
+            sealPath.lineTo(r * 1.3f, -r * 0.04f);
+            canvas.drawPath(sealPath, strokePaint);
+            canvas.restore();
+        }
+        canvas.restore();
+
         long now = timeMs;
-        float curX = cx;
-        float curY = cy - 20;
+        float curX = perchX;
+        float curY = perchY;
         boolean airborne = false;
         int dir = frogState.direction;
 
@@ -1177,7 +1247,8 @@ public class TechniqueRenderer {
         paint.setColor(Color.BLACK);
         paint.setAlpha(airborne ? 38 : 76);
         paint.setStyle(Paint.Style.FILL);
-        dstRect.set(curX - r * 0.34f, cy + 5, curX + r * 0.34f, cy + 17);
+        float shadowY = perchY - curY;
+        dstRect.set(curX - r * 0.34f, curY + shadowY + 4f, curX + r * 0.34f, curY + shadowY + 14f);
         canvas.drawOval(dstRect, paint);
         canvas.restore();
 
@@ -1188,17 +1259,19 @@ public class TechniqueRenderer {
             canvas.save();
             canvas.translate(curX, curY);
 
-            // C11: Спрайт стрибка малювався обличчям ліворуч, сидяча поза — праворуч.
-            // Відповідно у польоті напрямок інвертується: airborne ? -dir : dir.
-            float scaleX = (airborne ? -dir : dir);
-            canvas.scale(scaleX, 1.0f);
+            double bounce = (!airborne && frogState.landTime > 0)
+                    ? Math.sin((now - frogState.landTime) / 1000.0 * 19.0) * Math.exp(-(now - frogState.landTime) / 1000.0 * 8.0) * 0.13
+                    : 0.0;
+            float scaleX = (airborne ? -dir : dir) * (1.0f + (airborne ? -0.06f : (float) bounce));
+            float scaleY = 1.0f + (airborne ? 0.12f : (float) -bounce);
+            canvas.scale(scaleX, scaleY);
 
             paint.reset();
             paint.setAntiAlias(true);
             paint.setFilterBitmap(true);
-            paint.setAlpha(255); // Відновлення повної непрозорості
+            paint.setAlpha(255);
 
-            float size = r * 1.5f;
+            float size = r * 1.45f;
             dstRect.set(-size / 2, -size * 0.88f, size / 2, size * 0.12f);
             canvas.drawBitmap(frogBmp, null, dstRect, paint);
             canvas.restore();
@@ -1258,36 +1331,33 @@ public class TechniqueRenderer {
         float cy = height / 2f;
         float r = Math.min(width, height) * 0.28f;
 
+        // 1. Техніка аури або печатки призову позаду іконки
+        drawTechnique(canvas, id, cx, cy, r, 0, 0, true);
+
+        // 2. Зразок іконки SmartTube по центру
+        Bitmap st = getSmartTubeIcon();
+        if (st != null && !st.isRecycled()) {
+            float iconSize = Math.min(width, height) * 0.46f;
+            dstRect.set(cx - iconSize / 2f, cy - iconSize / 2f, cx + iconSize / 2f, cy + iconSize / 2f);
+            paint.reset();
+            paint.setAntiAlias(true);
+            paint.setFilterBitmap(true);
+            canvas.drawBitmap(st, null, dstRect, paint);
+        }
+
+        // 3. Для Гамабунти — жаба сидить зверху на іконці SmartTube
         if ("gamabunta".equals(id)) {
-            // Gamabunta preview shows SmartTube on the left and Lampa on the right
-            Bitmap st = getSmartTubeIcon();
-            Bitmap lampa = getLampaIcon();
-            float iconSize = Math.min(width, height) * 0.40f;
-
-            if (st != null && !st.isRecycled()) {
-                dstRect.set(width * 0.25f - iconSize / 2f, cy - iconSize / 2f + 8f,
-                        width * 0.25f + iconSize / 2f, cy + iconSize / 2f + 8f);
-                canvas.drawBitmap(st, null, dstRect, paint);
-            }
-            if (lampa != null && !lampa.isRecycled()) {
-                dstRect.set(width * 0.75f - iconSize / 2f, cy - iconSize / 2f + 8f,
-                        width * 0.75f + iconSize / 2f, cy + iconSize / 2f + 8f);
-                canvas.drawBitmap(lampa, null, dstRect, paint);
-            }
-
-            // Gamabunta perched on the left SmartTube emblem
-            drawTechnique(canvas, id, width * 0.25f, cy + 8f, r, 0, 0, true);
-        } else {
-            // Technique aura drawn BEHIND the icon
-            drawTechnique(canvas, id, cx, cy, r, 0, 0, true);
-
-            // Sample SmartTube app icon drawn on top with drop shadow
-            Bitmap st = getSmartTubeIcon();
-            if (st != null && !st.isRecycled()) {
-                float iconSize = Math.min(width, height) * 0.46f;
-                dstRect.set(cx - iconSize / 2f, cy - iconSize / 2f, cx + iconSize / 2f, cy + iconSize / 2f);
+            Bitmap idle = ensureBitmap("gamabunta-idle");
+            if (idle != null && !idle.isRecycled()) {
+                paint.reset();
+                paint.setAntiAlias(true);
                 paint.setFilterBitmap(true);
-                canvas.drawBitmap(st, null, dstRect, paint);
+                paint.setAlpha(255);
+                float size = r * 1.45f;
+                float perchX = cx + r * 0.5f;
+                float perchY = cy - r * 0.26f;
+                dstRect.set(perchX - size / 2f, perchY - size * 0.88f, perchX + size / 2f, perchY + size * 0.12f);
+                canvas.drawBitmap(idle, null, dstRect, paint);
             }
         }
     }

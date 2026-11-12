@@ -40,6 +40,8 @@ public class ChakraFocusView extends View {
     private float targetCy = -1f;
     private float targetR = 0f;
     private float currentAlpha = 0f;
+    private float lastDockX = -1f;
+    private float lastDockY = -1f;
 
     private static class Trail {
         float ax, ay, bx, by;
@@ -112,6 +114,7 @@ public class ChakraFocusView extends View {
 
     public void setTechnique(String technique) {
         this.currentTechnique = technique != null ? technique : "rasengan";
+        setElevation("gamabunta".equals(this.currentTechnique) ? 20f : 5f);
         invalidate();
     }
 
@@ -164,20 +167,20 @@ public class ChakraFocusView extends View {
             targetCx = newTargetX;
             targetCy = newTargetY;
             targetR = newTargetR;
-        }
 
-        if ("gamabunta".equals(currentTechnique) && renderer != null && old != null && view != null) {
-            old.getLocationInWindow(targetLocation);
-            getLocationInWindow(overlayLocation);
-            float fromX = targetLocation[0] - overlayLocation[0] + old.getWidth() / 2f;
-            float fromY = targetLocation[1] - overlayLocation[1] + old.getHeight() / 2f;
+            if ("gamabunta".equals(currentTechnique) && renderer != null) {
+                float fromX = lastDockX > 0 ? lastDockX : newTargetX;
+                float fromY = lastDockY > 0 ? lastDockY : newTargetY;
+                float toX = newTargetX;
+                float toY = newTargetY;
 
-            view.getLocationInWindow(targetLocation);
-            float toX = targetLocation[0] - overlayLocation[0] + view.getWidth() / 2f;
-            float toY = targetLocation[1] - overlayLocation[1] + view.getHeight() / 2f;
-
-            long now = android.os.SystemClock.uptimeMillis() - animationStartTime;
-            renderer.triggerGamabuntaJump(new PointF(fromX, fromY), new PointF(toX, toY), toX >= fromX ? 1 : -1, now);
+                if (lastDockX > 0 && Math.abs(toX - fromX) > 10f) {
+                    long now = android.os.SystemClock.uptimeMillis() - animationStartTime;
+                    renderer.triggerGamabuntaJump(new PointF(fromX, fromY), new PointF(toX, toY), toX >= fromX ? 1 : -1, now);
+                }
+                lastDockX = toX;
+                lastDockY = toY;
+            }
         }
 
         startAnimationLoop();

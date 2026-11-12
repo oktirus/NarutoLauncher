@@ -29,10 +29,15 @@ public class KonohaSwitch extends View implements Checkable {
     private final RectF trackRect = new RectF();
     private final RectF focusRect = new RectF();
 
-    private final int trackOffColor = Color.parseColor("#153745");
-    private final int trackOnColor = KonohaTheme.COLOR_ORANGE;
-    private final int borderColor = Color.parseColor("#44d6b67c");
-    private final int thumbColor = KonohaTheme.COLOR_PAPER;
+    private final int trackOffColor = Color.parseColor("#15303b");
+    private final int trackOffBorderColor = Color.parseColor("#66b3976a");
+    private final int thumbOffColor = Color.parseColor("#a69d7e");
+    private final int thumbOffBorderColor = Color.parseColor("#ddc293");
+
+    private final int trackOnColor = Color.parseColor("#33d9954c");
+    private final int trackOnBorderColor = KonohaTheme.COLOR_ORANGE;
+    private final int thumbOnColor = KonohaTheme.COLOR_ORANGE;
+    private final int thumbOnBorderColor = Color.parseColor("#f8d7a8");
 
     public KonohaSwitch(Context context) {
         this(context, null);
@@ -47,9 +52,7 @@ public class KonohaSwitch extends View implements Checkable {
         trackPaint.setStyle(Paint.Style.FILL);
         borderPaint.setStyle(Paint.Style.STROKE);
         borderPaint.setStrokeWidth(KonohaTheme.dp(context, 1));
-        borderPaint.setColor(borderColor);
         thumbPaint.setStyle(Paint.Style.FILL);
-        thumbPaint.setColor(thumbColor);
 
         focusPaint.setStyle(Paint.Style.STROKE);
         focusPaint.setStrokeWidth(KonohaTheme.dp(context, 2));
@@ -99,13 +102,17 @@ public class KonohaSwitch extends View implements Checkable {
         trackRect.set(1f, 1f, w - 1f, h - 1f);
         trackPaint.setColor(isChecked ? trackOnColor : trackOffColor);
         canvas.drawRoundRect(trackRect, radius, radius, trackPaint);
+        borderPaint.setColor(isChecked ? trackOnBorderColor : trackOffBorderColor);
         canvas.drawRoundRect(trackRect, radius, radius, borderPaint);
 
         // Thumb
         float thumbRadius = radius - KonohaTheme.dp(getContext(), 3);
         float thumbX = isChecked ? (w - radius) : radius;
         float thumbY = h / 2f;
+        thumbPaint.setColor(isChecked ? thumbOnColor : thumbOffColor);
         canvas.drawCircle(thumbX, thumbY, thumbRadius, thumbPaint);
+        borderPaint.setColor(isChecked ? thumbOnBorderColor : thumbOffBorderColor);
+        canvas.drawCircle(thumbX, thumbY, thumbRadius, borderPaint);
 
         // Focus glow outline if focused
         if (hasFocus()) {

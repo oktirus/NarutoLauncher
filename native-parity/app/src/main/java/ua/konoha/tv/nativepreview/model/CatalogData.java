@@ -157,7 +157,7 @@ public class CatalogData {
         new AppDefinition("preview.disneyplus", "Disney+", "disneyplus", "Історії та анімація", "disney", "com.disney.disneyplus"),
         new AppDefinition("preview.jellyfin", "Jellyfin", "jellyfin", "Особиста медіатека"),
         new AppDefinition("preview.sendfiles", "Send Files to TV", "sendfiles", "Передавання файлів", "send files", "com.yablio.sendfilestotv"),
-        new AppDefinition("preview.xplore", "X-plore", "xplore", "Файловий менеджер", "x-plore", "com.lonelycatgames.xplore")
+        new AppDefinition("preview.xplore", "X-plore", "xplore", "Файловий менеджер", "x-plore", "com.lonelycatgames.xplore", "com.android.documentsui", "файли", "files", "documents", "document")
     );
 
     public static String matchKind(String pkg, String label) {

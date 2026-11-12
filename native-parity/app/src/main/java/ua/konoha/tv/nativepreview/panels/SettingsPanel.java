@@ -3,6 +3,7 @@ package ua.konoha.tv.nativepreview.panels;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -21,6 +22,7 @@ import ua.konoha.tv.nativepreview.views.KonohaSeekBar;
 import ua.konoha.tv.nativepreview.views.KonohaSwitch;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -240,13 +242,10 @@ public class SettingsPanel extends FrameLayout {
     }
 
     private View createSliderRow(String title, String subtitle, int initial, KonohaSeekBar.OnProgressChangeListener changeListener) {
-        LinearLayout box = new LinearLayout(getContext());
-        box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(0, KonohaTheme.dp(getContext(), 10), 0, KonohaTheme.dp(getContext(), 8));
-
-        LinearLayout top = new LinearLayout(getContext());
-        top.setOrientation(LinearLayout.HORIZONTAL);
-        top.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout row = new LinearLayout(getContext());
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(0, KonohaTheme.dp(getContext(), 10), 0, KonohaTheme.dp(getContext(), 10));
 
         LinearLayout textCol = new LinearLayout(getContext());
         textCol.setOrientation(LinearLayout.VERTICAL);
@@ -265,25 +264,30 @@ public class SettingsPanel extends FrameLayout {
         tvSub.setTypeface(KonohaTheme.getNunito(getContext()));
         textCol.addView(tvSub);
 
-        top.addView(textCol, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
+        row.addView(textCol, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
 
-        TextView valView = new TextView(getContext());
-        valView.setId(android.R.id.text2);
-        valView.setText(initial + "%");
-        valView.setTextColor(KonohaTheme.COLOR_ORANGE);
-        valView.setTextSize(13);
-        valView.setTypeface(KonohaTheme.getNunitoBold(getContext()));
-        top.addView(valView);
-
-        box.addView(top);
+        LinearLayout volumeControl = new LinearLayout(getContext());
+        volumeControl.setOrientation(LinearLayout.HORIZONTAL);
+        volumeControl.setGravity(Gravity.CENTER_VERTICAL);
 
         KonohaSeekBar sb = new KonohaSeekBar(getContext());
         sb.setMax(100);
         sb.setProgress(initial);
         sb.setOnProgressChangeListener(changeListener);
-        box.addView(sb, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        volumeControl.addView(sb, new LinearLayout.LayoutParams(KonohaTheme.dp(getContext(), 125), ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        return box;
+        TextView valView = new TextView(getContext());
+        valView.setId(android.R.id.text2);
+        valView.setText(initial + "%");
+        valView.setTextColor(KonohaTheme.COLOR_ORANGE);
+        valView.setTextSize(12);
+        valView.setTypeface(KonohaTheme.getNunitoBold(getContext()));
+        valView.setPadding(KonohaTheme.dp(getContext(), 9), 0, 0, 0);
+        valView.setMinWidth(KonohaTheme.dp(getContext(), 36));
+        volumeControl.addView(valView);
+
+        row.addView(volumeControl);
+        return row;
     }
 
     private View createNavigationLink(String title, String val, View.OnClickListener clickListener) {
@@ -404,9 +408,9 @@ public class SettingsPanel extends FrameLayout {
     private Spinner createStyledSpinner(Context context) {
         Spinner spinner = new Spinner(context);
         GradientDrawable gd = new GradientDrawable();
-        gd.setColor(Color.parseColor("#0e2530"));
-        gd.setCornerRadius(KonohaTheme.dp(context, 4));
-        gd.setStroke(KonohaTheme.dp(context, 1), Color.parseColor("#33dbbd7d"));
+        gd.setColor(Color.parseColor("#082330"));
+        gd.setCornerRadius(KonohaTheme.dp(context, 3));
+        gd.setStroke(KonohaTheme.dp(context, 1), Color.parseColor("#889e875b"));
         spinner.setBackground(gd);
 
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
@@ -414,6 +418,40 @@ public class SettingsPanel extends FrameLayout {
         );
         spinner.setLayoutParams(lp);
         return spinner;
+    }
+
+    private ArrayAdapter<String> createThemedAdapter(Context context, List<String> items) {
+        return new ArrayAdapter<String>(context, android.R.layout.simple_spinner_item, items) {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                View v = super.getView(position, convertView, parent);
+                if (v instanceof TextView) {
+                    TextView tv = (TextView) v;
+                    tv.setTextColor(KonohaTheme.COLOR_PAPER);
+                    tv.setTextSize(12);
+                    tv.setTypeface(KonohaTheme.getNunito(getContext()));
+                    tv.setPadding(KonohaTheme.dp(getContext(), 8), 0, KonohaTheme.dp(getContext(), 8), 0);
+                    tv.setSingleLine(true);
+                    tv.setEllipsize(TextUtils.TruncateAt.END);
+                }
+                return v;
+            }
+
+            @Override
+            public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                View v = super.getDropDownView(position, convertView, parent);
+                if (v instanceof TextView) {
+                    TextView tv = (TextView) v;
+                    tv.setTextColor(KonohaTheme.COLOR_PAPER);
+                    tv.setTextSize(12);
+                    tv.setTypeface(KonohaTheme.getNunito(getContext()));
+                    tv.setBackgroundColor(Color.parseColor("#082330"));
+                    tv.setPadding(KonohaTheme.dp(getContext(), 12), KonohaTheme.dp(getContext(), 10),
+                            KonohaTheme.dp(getContext(), 12), KonohaTheme.dp(getContext(), 10));
+                }
+                return v;
+            }
+        };
     }
 
     private void setupHighlightSoundSpinner(Spinner spinner) {
@@ -426,8 +464,7 @@ public class SettingsPanel extends FrameLayout {
             if (hs.getId().equals(cur)) selectedIndex = i;
         }
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, names);
-        spinner.setAdapter(adapter);
+        spinner.setAdapter(createThemedAdapter(getContext(), names));
         spinner.setSelection(selectedIndex);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {
@@ -447,8 +484,7 @@ public class SettingsPanel extends FrameLayout {
             if (mt.getId().equals(cur)) selectedIndex = i;
         }
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, names);
-        spinner.setAdapter(adapter);
+        spinner.setAdapter(createThemedAdapter(getContext(), names));
         spinner.setSelection(selectedIndex);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {
@@ -468,8 +504,7 @@ public class SettingsPanel extends FrameLayout {
             if (seconds[i] == cur) selectedIndex = i;
         }
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, options);
-        spinner.setAdapter(adapter);
+        spinner.setAdapter(createThemedAdapter(getContext(), Arrays.asList(options)));
         spinner.setSelection(selectedIndex);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {
@@ -488,8 +523,7 @@ public class SettingsPanel extends FrameLayout {
             if (seconds[i] == cur) selectedIndex = i;
         }
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, options);
-        spinner.setAdapter(adapter);
+        spinner.setAdapter(createThemedAdapter(getContext(), Arrays.asList(options)));
         spinner.setSelection(selectedIndex);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {

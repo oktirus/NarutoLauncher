@@ -71,7 +71,7 @@ public class HeroTitleView extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        float textSize = KonohaTheme.dp(getContext(), 56);
+        float textSize = KonohaTheme.dp(getContext(), 78);
         line1Paint.setTextSize(textSize);
         line2Paint.setTextSize(textSize);
 

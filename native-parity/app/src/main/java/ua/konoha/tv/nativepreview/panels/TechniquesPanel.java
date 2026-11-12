@@ -236,16 +236,17 @@ public class TechniquesPanel extends FrameLayout {
     private View createTechniqueCard(Technique tech, boolean isSelected) {
         LinearLayout card = new LinearLayout(getContext());
         card.setOrientation(LinearLayout.VERTICAL);
+        card.setGravity(Gravity.CENTER_HORIZONTAL);
         card.setFocusable(true);
         card.setFocusableInTouchMode(true);
         card.setClickable(true);
-        card.setPadding(KonohaTheme.dp(getContext(), 8), KonohaTheme.dp(getContext(), 8),
-                KonohaTheme.dp(getContext(), 8), KonohaTheme.dp(getContext(), 8));
+        card.setPadding(KonohaTheme.dp(getContext(), 14), 0,
+                KonohaTheme.dp(getContext(), 14), KonohaTheme.dp(getContext(), 14));
 
         GridLayout.LayoutParams glp = new GridLayout.LayoutParams();
         glp.width = computedCardWidth > 0 ? computedCardWidth : KonohaTheme.dp(getContext(), 260);
         glp.height = GridLayout.LayoutParams.WRAP_CONTENT;
-        int m = KonohaTheme.dp(getContext(), 4);
+        int m = KonohaTheme.dp(getContext(), 6);
         glp.setMargins(m, m, m, m);
         card.setLayoutParams(glp);
 
@@ -253,13 +254,13 @@ public class TechniquesPanel extends FrameLayout {
         // 1. Static Preview Canvas (with sample icon inside)
         ImageView previewImage = new ImageView(getContext());
         previewViews.put(tech.getId(), previewImage);
-        int prevHeight = (int) (cw * (110f / 320f));
+        int prevHeight = KonohaTheme.dp(getContext(), 135);
         LinearLayout.LayoutParams prevLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, prevHeight
         );
         previewImage.setLayoutParams(prevLp);
         previewImage.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        previewImage.setBackgroundColor(Color.parseColor("#081c24"));
+        previewImage.setBackgroundColor(Color.TRANSPARENT);
 
         Bitmap staticBmp = getOrCreateStaticPreview(tech.getId(), cw, prevHeight);
         if (staticBmp != null) {
@@ -267,47 +268,62 @@ public class TechniquesPanel extends FrameLayout {
         }
         card.addView(previewImage);
 
-        // 2. Technique Name (Colored with its character color)
+        int techColor = getTechniqueColor(tech.getId());
+
+        // 2. Technique Name (Colored with its character color, 18sp Bold)
         TextView name = new TextView(getContext());
         name.setText(tech.getName());
-        name.setTextColor(getTechniqueColor(tech.getId()));
-        name.setTextSize(15);
+        name.setTextColor(techColor);
+        name.setTextSize(18);
         name.setTypeface(KonohaTheme.getNunitoBold(getContext()));
-        name.setPadding(0, KonohaTheme.dp(getContext(), 6), 0, 0);
+        name.setGravity(Gravity.CENTER);
+        name.setPadding(0, KonohaTheme.dp(getContext(), 4), 0, 0);
         card.addView(name);
 
-        // 3. Owner
+        // 3. Owner (11sp)
         TextView owner = new TextView(getContext());
         owner.setText(tech.getOwner());
         owner.setTextColor(Color.parseColor("#dfcfaf"));
-        owner.setTextSize(10);
+        owner.setTextSize(11);
         owner.setTypeface(KonohaTheme.getNunito(getContext()));
+        owner.setGravity(Gravity.CENTER);
+        owner.setPadding(0, KonohaTheme.dp(getContext(), 2), 0, 0);
         card.addView(owner);
 
-        // 4. Description
+        // 4. Description (12sp)
         TextView desc = new TextView(getContext());
         desc.setText(tech.getDescription());
         desc.setTextColor(Color.parseColor("#b8c8bf"));
-        desc.setTextSize(11);
+        desc.setTextSize(12);
         desc.setTypeface(KonohaTheme.getNunito(getContext()));
+        desc.setGravity(Gravity.CENTER);
         desc.setMaxLines(2);
-        desc.setPadding(0, KonohaTheme.dp(getContext(), 2), 0, KonohaTheme.dp(getContext(), 4));
+        desc.setPadding(0, KonohaTheme.dp(getContext(), 5), 0, KonohaTheme.dp(getContext(), 10));
         card.addView(desc);
 
-        // 5. State caption
+        // Top divider line for state
+        View divider = new View(getContext());
+        divider.setBackgroundColor(Color.parseColor("#33d1b781"));
+        card.addView(divider, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, KonohaTheme.dp(getContext(), 1)
+        ));
+
+        // 5. State caption (12sp)
         TextView state = new TextView(getContext());
         state.setText(isSelected ? "Обрано" : "Обрати техніку");
-        state.setTextColor(isSelected ? KonohaTheme.COLOR_ORANGE : Color.parseColor("#7aa197"));
-        state.setTextSize(10);
+        state.setTextColor(isSelected ? techColor : Color.parseColor("#ddc897"));
+        state.setTextSize(12);
         state.setTypeface(KonohaTheme.getNunito(getContext()));
+        state.setGravity(Gravity.CENTER);
+        state.setPadding(0, KonohaTheme.dp(getContext(), 9), 0, 0);
         card.addView(state);
 
-        // Card background & borders
+        // Card background & borders matching techniques.css
         final GradientDrawable normalBg = new GradientDrawable();
-        normalBg.setColor(isSelected ? KonohaTheme.COLOR_CARD_ACTIVE : KonohaTheme.COLOR_CARD_BG);
-        normalBg.setCornerRadius(KonohaTheme.dp(getContext(), 4));
+        normalBg.setColor(isSelected ? Color.parseColor("#193d48") : Color.parseColor("#7708232d"));
+        normalBg.setCornerRadius(KonohaTheme.dp(getContext(), 5));
         normalBg.setStroke(KonohaTheme.dp(getContext(), isSelected ? 2 : 1),
-                isSelected ? KonohaTheme.COLOR_GOLD : Color.parseColor("#33dbbd7d"));
+                isSelected ? techColor : Color.parseColor("#4491a696"));
         card.setBackground(normalBg);
 
         card.setOnClickListener(v -> {
@@ -330,9 +346,10 @@ public class TechniquesPanel extends FrameLayout {
             v.setScaleX(hasFocus ? 1.03f : 1.0f);
             v.setScaleY(hasFocus ? 1.03f : 1.0f);
             GradientDrawable d = new GradientDrawable();
-            d.setColor(hasFocus ? Color.parseColor("#2a424e") : (isSelected ? KonohaTheme.COLOR_CARD_ACTIVE : KonohaTheme.COLOR_CARD_BG));
-            d.setCornerRadius(KonohaTheme.dp(getContext(), 4));
-            d.setStroke(KonohaTheme.dp(getContext(), 2), hasFocus ? KonohaTheme.COLOR_GOLD : (isSelected ? KonohaTheme.COLOR_GOLD : Color.parseColor("#33dbbd7d")));
+            d.setColor(hasFocus ? Color.parseColor("#193d48") : (isSelected ? Color.parseColor("#193d48") : Color.parseColor("#7708232d")));
+            d.setCornerRadius(KonohaTheme.dp(getContext(), 5));
+            d.setStroke(KonohaTheme.dp(getContext(), 2),
+                    hasFocus ? techColor : (isSelected ? techColor : Color.parseColor("#4491a696")));
             v.setBackground(d);
         });
 
