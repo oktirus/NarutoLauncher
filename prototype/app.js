@@ -268,7 +268,7 @@ function remote(key,fromNative=false){
  resetIdle();const active=document.activeElement;if(prefs.audio&&!audioReady()&&!(key==='Enter'&&active?.dataset.action==='audio'))unlockAudio();
  if(modal==='game'&&!(key==='Enter'&&active?.tagName==='BUTTON')&&window.KonohaRunner.handleKey(key))return;
  if(ambient){if(['Enter','Escape','ContextMenu'].includes(key)){sound('back');leaveAmbient();}return;}
- if(key==='Escape'){sound('back');if(active?.tagName==='INPUT'&&active.type==='search'){active.blur();$('[data-action="close"]',$('.scroll-panel')).focus();}else if(modal)closePanel();else $('.brand').focus();return;}
+ if(key==='Escape'){sound('back');if(modal)closePanel();else $('.brand').focus();return;}
  if(key==='ContextMenu'){if(modal==='settings')closePanel();else openPanel('settings');return;}
  if(key==='Enter'){if(active?.tagName==='INPUT'&&active.type==='search'){controls().find(el=>el.dataset.action==='launch')?.focus();return;}if(active?.tagName==='SELECT'||active?.type==='range')return;active?.click();return;}
  if(!key.startsWith('Arrow'))return;
@@ -325,7 +325,7 @@ document.addEventListener('scroll',()=>{if(focusTarget?.isConnected)updateFocus(
 function draw(time){
  frame=0;if(paused||!canMove())return;const dt=Math.min((time-lastTime)/1000||.016,.04);lastTime=time;
  // The archive keeps one animated focus aura; its scenery and the technique sheet stay still.
- if(modal){if(['library','search'].includes(modal)&&focusCenter){for(const list of[trails,bursts])for(let i=list.length-1;i>=0;i--){list[i].life-=dt;if(list[i].life<=0)list.splice(i,1);}drawTechniques(time);frame=requestAnimationFrame(draw);}return;}
+ if(modal){if(['library','search'].includes(modal)&&focusCenter){for(const list of[trails,bursts])for(let i=list.length-1;i>=0;i--){list[i].life-=dt;if(list[i].life<=0)list.splice(i,1);}drawTechniques(time);}frame=requestAnimationFrame(draw);return;}
  ctx.clearRect(0,0,width,height);
  const pointerWeight=Math.exp(-(time-pointerTime)/6000);const focusX=focusCenter?(focusCenter.x/width-.5)*7:0,focusY=focusCenter?(focusCenter.y/height-.5)*4:0;
  $('.village').style.setProperty('--px',(Math.sin(time/1000*Math.PI*2/48)*14+pointerX*pointerWeight+focusX).toFixed(3));

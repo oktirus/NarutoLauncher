@@ -438,6 +438,7 @@ public class MainActivity extends Activity {
             if (firstCard != null) {
                 if (firstCard.getId() == View.NO_ID) firstCard.setId(View.generateViewId());
                 firstCard.setNextFocusUpId(sceneChoiceBtn.getId());
+                firstCard.setNextFocusLeftId(firstCard.getId());
                 sceneChoiceBtn.setNextFocusDownId(firstCard.getId());
             }
             if (brandBtn != null) {
@@ -466,12 +467,13 @@ public class MainActivity extends Activity {
             if (archiveCard != null) {
                 if (archiveCard.getId() == View.NO_ID) archiveCard.setId(View.generateViewId());
                 archiveCard.setNextFocusUpId(techniqueBtn.getId());
+                archiveCard.setNextFocusRightId(archiveCard.getId());
                 techniqueBtn.setNextFocusDownId(archiveCard.getId());
             }
-            if (settingsBtn != null) {
-                if (settingsBtn.getId() == View.NO_ID) settingsBtn.setId(View.generateViewId());
-                techniqueBtn.setNextFocusUpId(settingsBtn.getId());
-                settingsBtn.setNextFocusDownId(techniqueBtn.getId());
+            if (gameBtn != null) {
+                if (gameBtn.getId() == View.NO_ID) gameBtn.setId(View.generateViewId());
+                techniqueBtn.setNextFocusUpId(gameBtn.getId());
+                gameBtn.setNextFocusDownId(techniqueBtn.getId());
             }
         }
     }
@@ -692,8 +694,14 @@ public class MainActivity extends Activity {
                     }
                     closeActivePanel();
                     if (first != null) {
-                        first.requestFocus();
                         chakraFocusView.setTargetView(first);
+                        first.requestFocusFromTouch();
+                        first.requestFocus();
+                        first.post(() -> {
+                            first.requestFocusFromTouch();
+                            first.requestFocus();
+                            chakraFocusView.setTargetView(first);
+                        });
                     }
                     chakraFocusView.triggerBurst();
                     audioController.playUiSound();
@@ -842,6 +850,10 @@ public class MainActivity extends Activity {
                     closeActivePanel();
                     return true;
                 }
+                if (brandBtn != null) {
+                    brandBtn.requestFocus();
+                }
+                return true;
             }
 
             // Відкриття налаштувань по Menu

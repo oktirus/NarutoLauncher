@@ -54,7 +54,7 @@ public class VillageBackgroundView extends View {
         @Override
         public void run() {
             if (disposed || activityPaused) return;
-            if (isAttachedToWindow() && getVisibility() == VISIBLE && !isDecorPaused && isMotionEnabled) {
+            if (isAttachedToWindow() && getVisibility() == VISIBLE && isMotionEnabled) {
                 invalidate();
             }
             if (!activityPaused && isAttachedToWindow()) {

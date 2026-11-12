@@ -199,6 +199,11 @@ public class TechniquesPanel extends FrameLayout {
 
         // Configure deterministic D-Pad spatial graph for the 3-column grid
         for (int i = 0; i < cards.length; i++) {
+            if (cards[i].getId() == View.NO_ID) {
+                cards[i].setId(View.generateViewId());
+            }
+        }
+        for (int i = 0; i < cards.length; i++) {
             int col = i % computedColumnCount;
             if (col < computedColumnCount - 1 && i + 1 < cards.length) {
                 cards[i].setNextFocusRightId(cards[i + 1].getId());
@@ -220,7 +225,11 @@ public class TechniquesPanel extends FrameLayout {
 
         if (selectedCard != null) {
             final View fCard = selectedCard;
-            post(() -> fCard.requestFocus());
+            fCard.requestFocus();
+            post(() -> {
+                fCard.requestFocusFromTouch();
+                fCard.requestFocus();
+            });
         }
     }
 
