@@ -1,5 +1,19 @@
 # Konoha — Naruto launcher
 
+Основна версія — [нативний Naruto · Коноха](native-parity/README.md), розробник **Oktirus**: Android Views + Custom Canvas, Android TV. Chromium/WebView у `android/` та `prototype/` залишається альтернативою. Нижче наведено документацію вебверсії.
+
+Проєкт винесено з Network у самостійний репозиторій [oktirus/NarutoLauncher](https://github.com/oktirus/NarutoLauncher). Правила роботи — [AGENTS.md](AGENTS.md), пам'ять — [Memory](Memory/MEMORY.md), база знань — [KnowledgeBase](KnowledgeBase/README.md), історія — `History/`, спеціалізовані скіли — `Skills/`.
+
+Нативна збірка (Windows, PowerShell 7, JDK 17, Android SDK 34):
+
+```powershell
+pwsh -NoProfile -File native-parity/Build.ps1
+```
+
+APK та `build-manifest.json` з'являються у `native-parity/releases/`. На Linux/CI: `cd native-parity`, `chmod +x gradlew`, `./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug`. GitHub Actions запускає ці перевірки; сумісні підписані оновлення публікуються окремо в Releases. [Оновлення та публікація APK](docs/UPDATES.md).
+
+Великі handoff/ревізії, локальні device backups, кеші й діагностичні відео не є частиною публічного Git. Під час відокремлення їх збережено локально. Історичні manifests містять старі шляхи; це дані минулих запусків, а не залежність актуальної збірки від Network.
+
 Окремий локальний інтерактивний макет на основі Yoru / cleanyourtv.
 Попередній AnimeLauncher/Yoru збережено: перевіряються хеші 121 статичного файла.
 З базового списку 122 файлів виключено лише журнал preview-stderr.log, який дописує сервер.
@@ -7,7 +21,7 @@
 Preview: **http://127.0.0.1:8767/prototype/**.
 
 ```powershell
-pwsh -NoProfile -File .\NarutoLauncher\Preview.ps1
+pwsh -NoProfile -File .\Preview.ps1
 ```
 
 Сервер слухає лише 127.0.0.1. Якщо вже працює, відкрий посилання;

@@ -33,6 +33,8 @@ public class CatalogDataTest {
     @Test
     public void testTenTechniques() {
         Assert.assertEquals(10, CatalogData.TECHNIQUES.size());
+        Assert.assertEquals("rasengan", CatalogData.TECHNIQUES.get(0).getId());
+        Assert.assertEquals("rasenshuriken", CatalogData.TECHNIQUES.get(1).getId());
         Set<String> techIds = new HashSet<>();
         for (Technique t : CatalogData.TECHNIQUES) {
             techIds.add(t.getId());

@@ -1,0 +1,49 @@
+[
+  {
+    "file": "references/images/neji-approved.jpg",
+    "role": "approved_generated_result",
+    "sha256": "b4556c6be45b55d12ea209f02bfee2c19e4d7855c13a36e945b7f68c66662296",
+    "source_artifact": "assets/runtime/v9/neji.jpg"
+  },
+  {
+    "file": "references/images/neji-anime-board.jpg",
+    "role": "actual_anime_reference_board",
+    "sha256": "7162a3a902a19ee69dda88ed28ce5da59a338f0ccf2ca4f30b8e10d6708b1758",
+    "source_artifact": "revisions/v9/references/neji-face-board.jpg",
+    "frames": [
+      {
+        "page": "https://naruto-official.com/en/anime/naruto1/list/01_286",
+        "url": "https://cmsapi-frontend.naruto-official.com/site/api/naruto/Image/get?path=/naruto/import/images/naruto01/001%EF%BD%9E100/062/C020a.jpg",
+        "original_sha256": "ae87095e5f846b945c3cba7ddee7ef2e4139dc789fc6dba9c623816168173fdc"
+      },
+      {
+        "page": "https://naruto-official.com/en/anime/naruto1/list/01_286",
+        "url": "https://cmsapi-frontend.naruto-official.com/site/api/naruto/Image/get?path=/naruto/import/images/naruto01/001%EF%BD%9E100/062/C129.jpg",
+        "original_sha256": "8eb6a93d093859e8de59213d51e6483fc8d3ea86154ea954fa9b7a87bb65260f"
+      },
+      {
+        "page": "https://naruto-official.com/en/anime/naruto1/list/01_286",
+        "url": "https://cmsapi-frontend.naruto-official.com/site/api/naruto/Image/get?path=/naruto/import/images/naruto01/001%EF%BD%9E100/062/C171_1.jpg",
+        "original_sha256": "04e8a91326edb3f4d95c1cf451d15adc8ff107873064b0a86e62a7df50b76547"
+      },
+      {
+        "page": "https://naruto-official.com/en/anime/naruto1/list/01_286",
+        "url": "https://cmsapi-frontend.naruto-official.com/site/api/naruto/Image/get?path=/naruto/import/images/naruto01/001%EF%BD%9E100/062/C218.jpg",
+        "original_sha256": "7ffae86382fab3bc81c5d963ec6932891a28cf663880e16e045c917a31d233e4"
+      }
+    ]
+  },
+  {
+    "file": "references/images/choji-approved.jpg",
+    "role": "approved_generated_result",
+    "sha256": "7654b96559b086dfa54ebf3cc437c46198788f1ec05a99f953c1847ea09ba04f",
+    "source_artifact": "assets/runtime/v9/choji.jpg"
+  },
+  {
+    "file": "references/images/choji-anime-board.jpg",
+    "role": "actual_anime_reference_board",
+    "sha256": "15afbfabb3e64d87e9aae8092e20d56cbe6d774f25ae507e903515b0d1934162",
+    "source_artifact": "revisions/v9/references/choji-teen-board.jpg",
+    "frames": []
+  }
+]

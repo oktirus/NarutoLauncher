@@ -26,6 +26,81 @@ import static org.junit.Assert.*;
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @LooperMode(LooperMode.Mode.PAUSED)
 public class NativeUiRenderTest {
+    @Test
+    @Config(qualifiers = "w963dp-h541dp-land-mdpi")
+    public void renderPrimaryLauncherDefaultsAndAbout() throws Exception {
+        org.robolectric.shadows.ShadowChoreographer.setPaused(true);
+        PreferencesManager prefs = new PreferencesManager(RuntimeEnvironment.getApplication());
+        assertTrue(prefs.isAudioEnabled());
+        assertTrue(prefs.isMotionEnabled());
+        assertTrue(prefs.isAmbienceEnabled());
+        assertEquals(60, prefs.getRotationSeconds());
+        assertEquals(900, prefs.getIdleSeconds());
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup().visible();
+        try {
+            MainActivity activity = controller.get();
+            flush(activity, "appManager", "executor");
+            flush(activity, "backgroundView", "bgExecutor");
+            flush(activity, "dockView", "iconExecutor");
+            flush(activity, "techniqueRenderer", "decodeExecutor");
+            capture(activity, "primary-defaults-home-963", 963, 541);
+            NativeLifecycleTest.call(activity, "showAboutDialog");
+            android.app.AlertDialog dialog = org.robolectric.shadows.ShadowAlertDialog.getLatestAlertDialog();
+            org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper())
+                    .idleFor(java.time.Duration.ofMillis(16));
+            captureView(dialog.getWindow().getDecorView(), "primary-about-963", 600, 500);
+            dialog.dismiss();
+            NativeLifecycleTest.call(activity, "openSettings");
+            capture(activity, "primary-defaults-settings-963", 963, 541);
+            activity.closeActivePanel();
+            NativeLifecycleTest.call(activity, "openTechniques");
+            flush(activity, "techniqueRenderer", "decodeExecutor");
+            capture(activity, "primary-techniques-order-963", 963, 541);
+        } finally { controller.pause().stop().destroy(); }
+    }
+
+    @Test public void renderHomeSetupSuggestionAndSettingsStatus() throws Exception {
+        org.robolectric.shadows.ShadowChoreographer.setPaused(true);
+        android.content.pm.ResolveInfo otherHome = new android.content.pm.ResolveInfo();
+        otherHome.activityInfo = new android.content.pm.ActivityInfo();
+        otherHome.activityInfo.packageName = "another.launcher";
+        otherHome.activityInfo.name = "another.launcher.HomeActivity";
+        org.robolectric.Shadows.shadowOf(RuntimeEnvironment.getApplication().getPackageManager())
+                .setResolveInfosForIntent(new android.content.Intent(android.content.Intent.ACTION_MAIN)
+                        .addCategory(android.content.Intent.CATEGORY_HOME), java.util.List.of(otherHome));
+        PreferencesManager prefs = new PreferencesManager(RuntimeEnvironment.getApplication());
+        prefs.setMotionEnabled(false);
+        prefs.setAudioEnabled(false);
+        prefs.setIdleSeconds(300);
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup().visible();
+        try {
+            MainActivity activity = controller.get();
+            flush(activity, "appManager", "executor");
+            flush(activity, "backgroundView", "bgExecutor");
+            activity.onWindowFocusChanged(true);
+            android.app.AlertDialog prompt = org.robolectric.shadows.ShadowAlertDialog.getLatestAlertDialog();
+            assertNotNull("First launch offers HOME setup", prompt);
+            assertTrue(prompt.isShowing());
+            ((Runnable) NativeLifecycleTest.field(activity, "idleRunnable")).run();
+            assertEquals("Do not enter ambient over a HOME suggestion", View.GONE,
+                    ((View) NativeLifecycleTest.field(activity, "ambientOverlay")).getVisibility());
+            org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper())
+                    .idleFor(java.time.Duration.ofMillis(16));
+            captureView(prompt.getWindow().getDecorView(), "home-setup-prompt", 600, 360);
+            prompt.dismiss();
+            NativeLifecycleTest.call(activity, "openSettings");
+            layout(activity, 963, 541);
+            ua.konoha.tv.nativepreview.panels.SettingsPanel panel = NativeLifecycleTest.field(activity, "settingsPanel");
+            android.widget.TextView value = NativeLifecycleTest.field(panel, "homeScreenValueText");
+            View row = (View) value.getParent();
+            assertTrue(row.requestFocusFromTouch());
+            panel.setHomeScreenActive(false);
+            capture(activity, "settings-home-not-default-963", 963, 541);
+            panel.setHomeScreenActive(true);
+            capture(activity, "settings-home-active-963", 963, 541);
+        } finally { controller.pause().stop().destroy(); }
+    }
+
     @Test public void renderFocusedLibraryEffects() throws Exception {
         org.robolectric.shadows.ShadowChoreographer.setPaused(true);
         new PreferencesManager(RuntimeEnvironment.getApplication()).setMotionEnabled(false);
@@ -134,6 +209,13 @@ public class NativeUiRenderTest {
 
     private static void capture(MainActivity activity, String name, int width, int height) throws Exception {
         View root = layout(activity, width, height);
+        captureView(root, name, width, height);
+    }
+
+    private static void captureView(View root, String name, int width, int height) throws Exception {
+        root.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
+        root.layout(0, 0, width, height);
         invalidateTree(root);
         Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         root.draw(new Canvas(bitmap));

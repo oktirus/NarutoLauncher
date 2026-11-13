@@ -1,0 +1,4 @@
+interface:
+  display_name: "Themed Android TV Launcher"
+  short_description: "Build a native TV launcher around a fictional world"
+  default_prompt: "Use $themed-tv-launcher to build a working native Android TV launcher for my chosen anime, series, film, or game, with reference-led artwork and verified remote navigation."

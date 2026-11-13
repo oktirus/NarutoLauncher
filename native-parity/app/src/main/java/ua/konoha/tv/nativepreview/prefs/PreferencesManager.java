@@ -57,7 +57,7 @@ public class PreferencesManager {
     }
 
     public boolean isAudioEnabled() {
-        return prefs.getBoolean(KEY_AUDIO, false);
+        return prefs.getBoolean(KEY_AUDIO, true);
     }
 
     public void setAudioEnabled(boolean enabled) {
@@ -123,7 +123,7 @@ public class PreferencesManager {
     }
 
     public int getRotationSeconds() {
-        int r = prefs.getInt(KEY_ROTATION, 0);
+        int r = prefs.getInt(KEY_ROTATION, 60);
         if (r != 0 && r != 60 && r != 180 && r != 600) r = 0;
         return r;
     }
@@ -133,7 +133,7 @@ public class PreferencesManager {
     }
 
     public int getIdleSeconds() {
-        int i = prefs.getInt(KEY_IDLE, 0);
+        int i = prefs.getInt(KEY_IDLE, 900);
         if (i != 0 && i != 300 && i != 900) i = 0;
         return i;
     }

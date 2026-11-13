@@ -1,0 +1,6 @@
+/* Keep both faces visible in the shared Minato/Kushina portrait composition. */
+@media(max-width:560px){
+ body[data-scene="minato"] .hero-copy{position:absolute;bottom:10px;max-width:90%;padding-bottom:0}
+ body[data-scene="minato"] .hero-copy h1{font-size:38px;margin-bottom:10px}
+ body[data-scene="minato"] .hero-description{font-size:12px;line-height:1.4}
+}

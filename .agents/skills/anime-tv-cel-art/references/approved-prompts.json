@@ -1,0 +1,38 @@
+[
+  {
+    "id": "neji",
+    "prompt": "Use case: illustration-story. Asset: 16:9 full-frame launcher wallpaper. Transform the supplied anime reference board into ONE completely new scene, NOT a collage, NOT a poster. Match the actual Naruto / Naruto Shippuden TV anime production drawing style very closely: crisp dark contour lines of steady weight, flat local colors, only one or two hard edged cel shadow tones, spare highlights on hair, modest hand-painted gouache background with broad simple shapes. Character design faithful to the anime, NOT modern glossy fan-art. Normal grounded animation staging and readable silhouette. No 3D, no volumetric light shafts, no bloom, no lens flare, no wet glossy texture, no photorealistic materials, no ornate microdetail, no painterly face, no bokeh, no hyper-sharp textures, no extra fingers, no text, no watermark, no split panels. The reference board contains multiple people/ages only to establish design and cel-shading; draw ONLY the requested single Shippuden-era hero. Frame character in the right third (face around x=77%, y=30%), keep the left 45% lower-contrast open background for launcher title, no typography in the image. Wide landscape 16:9.\nSubject: teen Shippuden Neji Hyuga, long dark-brown straight hair tied near the end, pale pupil-less eyes, silver leaf forehead protector, loose cream kimono-style top, dark brown wide trousers, blue ninja sandals. Preserve Neji's sharp modest facial design from the board but Shippuden clothes. Standing on the right in side three-quarter view with one relaxed hand extended palm-up as a SINGLE small white bird flies toward the open left sky. Hand drawn with exactly five natural fingers. Quiet snow in Hyuga courtyard: two simple posts, pale garden wall, sparse dark bamboo left background, a tiny empty open wooden bird cage near the lower right. Broad cool gray-blue snow shapes, sparse snowflakes, gentle diffuse daylight. Do not depict decorative filigree, lace snow, glowing energy, no melodramatic lighting, no ornamental costume, no ornate architecture. Calm actual anime episode staging.",
+    "tool": "built-in image_gen",
+    "input_role": "actual anime character-design and style reference board",
+    "reference": "images/neji-anime-board.jpg",
+    "approved_result": "images/neji-approved.jpg",
+    "provenance": "NarutoLauncher/revisions/v9/generation-manifest.json; user approved v9 before requesting this skill",
+    "native_source_size": [
+      1672,
+      941
+    ],
+    "approved_runtime_size": [
+      1920,
+      1080
+    ],
+    "notes": "Runtime JPEG is resampled from the generated PNG, not native 4K. Output is generated fan art, not an official anime frame."
+  },
+  {
+    "id": "choji",
+    "prompt": "Use case: illustration-story. Asset: 16:9 full-frame launcher wallpaper. Transform the supplied anime reference board into ONE completely new scene, NOT a collage, NOT a poster. Match the actual Naruto / Naruto Shippuden TV anime production drawing style very closely: crisp dark contour lines of steady weight, flat local colors, only one or two hard edged cel shadow tones, spare highlights on hair, modest hand-painted gouache background with broad simple shapes. Character design faithful to the anime, NOT modern glossy fan-art. Normal grounded animation staging and readable silhouette. No 3D, no volumetric light shafts, no bloom, no lens flare, no wet glossy texture, no photorealistic materials, no ornate microdetail, no painterly face, no bokeh, no hyper-sharp textures, no extra fingers, no text, no watermark, no split panels. The reference board contains multiple people/ages only to establish design and cel-shading; draw ONLY the requested single Shippuden-era hero. Frame character in the right third (face around x=77%, y=30%), keep the left 45% lower-contrast open background for launcher title, no typography in the image. Wide landscape 16:9.\nSubject: Shippuden Choji Akimichi with broad round youthful cheeks and exactly TWO red cheek spirals, spiky reddish-brown hair, dark eyes, silver leaf plate on red forehead band, simple dark-red Akimichi armor over a red tunic, broad stocky build. He sits at a wooden restaurant counter on the RIGHT, cheerful closed-mouth smile, one hand naturally holds a skewer with THREE dango balls and the other rests on counter. Half body view, hands clearly separated. Small plain bowl and tea cup. Background: a simple dusk Konoha side street recedes on the LEFT with plain walls, two shop awnings and ONLY two orange lanterns. No people in background, no Hokage rock. Dry matte street, flat warm window squares, broad plum blue dusk sky. No fake writing on shop signs, no magical butterflies, no excessive steam, no detailed food photography, no skin textures, no cinematic glows. Ordinary welcoming anime episode still with cel shaded character and simple painted setting.",
+    "tool": "built-in image_gen",
+    "input_role": "actual anime character-design and style reference board",
+    "reference": "images/choji-anime-board.jpg",
+    "approved_result": "images/choji-approved.jpg",
+    "provenance": "NarutoLauncher/revisions/v9/generation-manifest.json; user approved v9 before requesting this skill",
+    "native_source_size": [
+      1672,
+      941
+    ],
+    "approved_runtime_size": [
+      1920,
+      1080
+    ],
+    "notes": "Runtime JPEG is resampled from the generated PNG, not native 4K. Output is generated fan art, not an official anime frame."
+  }
+]

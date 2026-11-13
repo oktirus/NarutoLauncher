@@ -35,6 +35,8 @@ public class SettingsPanel extends FrameLayout {
         void onTechniquesRequested();
         void onAmbientRequested();
         void onSystemSettingsRequested(String target);
+        void onHomeScreenRequested();
+        void onUpdatesRequested();
         void onRefreshAppsRequested();
         void onAboutRequested();
         void onCloseRequested();
@@ -47,6 +49,7 @@ public class SettingsPanel extends FrameLayout {
     private final LinearLayout content;
 
     private TextView techniqueValueText;
+    private TextView homeScreenValueText;
     private KonohaSwitch motionSwitch;
     private KonohaSwitch audioSwitch;
     private KonohaSwitch musicSwitch;
@@ -171,6 +174,19 @@ public class SettingsPanel extends FrameLayout {
         content.addView(createSpinnerRow("Режим спокою", "Автоматичний перехід у тиху мить.", idleSpinner));
 
         // 11. Links & actions
+        View homeRow = createNavigationLink("Домашній екран", "Зробити основним", v -> {
+            if (listener != null) listener.onHomeScreenRequested();
+        });
+        homeScreenValueText = homeRow.findViewById(android.R.id.text2);
+        content.addView(homeRow);
+        String installedVersion = "Перевірити версію";
+        try { installedVersion = "v" + context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName; }
+        catch (android.content.pm.PackageManager.NameNotFoundException error) {
+            android.util.Log.w("KonohaSettings", "Installed version unavailable", error);
+        }
+        content.addView(createNavigationLink("Оновлення Конохи", installedVersion, v -> {
+            if (listener != null) listener.onUpdatesRequested();
+        }));
         content.addView(createNavigationLink("Увійти в режим спокою", "Тиха мить", v -> {
             if (listener != null) listener.onAmbientRequested();
         }));
@@ -621,5 +637,9 @@ public class SettingsPanel extends FrameLayout {
 
     public void updateTechnique(String name) {
         if (techniqueValueText != null) techniqueValueText.setText(name);
+    }
+
+    public void setHomeScreenActive(boolean active) {
+        homeScreenValueText.setText(active ? "Коноха · активний" : "Зробити основним");
     }
 }

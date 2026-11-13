@@ -1,0 +1,3 @@
+/* The chooser is a still contact sheet; only the selected Home technique moves. */
+.village.decor-paused,.village.decor-paused *{animation-play-state:paused!important}
+.technique-card .technique-art,.technique-card .technique-art *{animation:none!important}

@@ -1,0 +1,6 @@
+/* The game uses the entire viewport width, preserving the canvas aspect ratio. */
+.game-panel.scroll-panel{width:100%;max-width:none;border:0;box-shadow:none;padding:12px 24px}
+.game-panel .panel-heading{margin-bottom:8px}
+.game-panel.scroll-panel::before{display:none}
+.game-panel .runner-stage{width:100%;max-width:none;margin-inline:0}
+@media(max-width:650px){.game-panel.scroll-panel{padding:16px 12px}}

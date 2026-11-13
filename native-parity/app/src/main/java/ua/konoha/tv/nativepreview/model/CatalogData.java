@@ -96,6 +96,7 @@ public class CatalogData {
 
     public static final List<Technique> TECHNIQUES = Arrays.asList(
         new Technique("rasengan", "Расенґан", "Наруто", parseColor("#85e5ff"), "rasengan", "Щільні спіралі чакри й обертовий вихор."),
+        new Technique("rasenshuriken", "Расенсюрикен", "Наруто · стихія вітру", parseColor("#b7f1e5"), "rasenshuriken", "Чотири леза вітру навколо спірального ядра."),
         new Technique("chidori", "Чідорі", "Саске / Какаші", parseColor("#b8dfff"), "chidori", "Рвані розгалуження блискавки навколо іконки."),
         new Technique("sharingan", "Шарінґан", "Клан Учіха", parseColor("#ff6265"), "sharingan", "Три томое на червоній райдужці."),
         new Technique("kurama", "Чакра Курами", "Наруто", parseColor("#ff9a46"), "kurama", "Дев’ять живих хвостів і теплий покрив чакри."),
@@ -103,7 +104,6 @@ public class CatalogData {
         new Technique("hiraishin", "Хірайшин", "Мінато · Четвертий хокаге", parseColor("#ffe59b"), "hiraishin", "Трипроменевий кунай і золотий слід телепорту."),
         new Technique("fireball", "Вогняна куля", "Саске", parseColor("#ffb65c"), "fireball", "Вогняна корона з язиками полум’я."),
         new Technique("amaterasu", "Аматерасу", "Ітачі / Саске", parseColor("#c3a0ed"), "amaterasu", "Чорне полум’я з холодним фіолетовим краєм."),
-        new Technique("rasenshuriken", "Расенсюрикен", "Наруто · стихія вітру", parseColor("#b7f1e5"), "rasenshuriken", "Чотири леза вітру навколо спірального ядра."),
         new Technique("gamabunta", "Стрибок Гамабунти", "Володар жаб", parseColor("#e7b789"), "gamabunta", "Гамабунта стрибає вперед і здіймає пил при приземленні.")
     );
 

@@ -3,7 +3,7 @@ build/
 app/build/
 releases/
 verification/
-reviews/
+reviews/*evidence*/
 local.properties
 .idea/
 *.iml

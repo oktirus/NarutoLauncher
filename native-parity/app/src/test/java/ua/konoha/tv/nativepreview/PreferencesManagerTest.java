@@ -99,9 +99,9 @@ public class PreferencesManagerTest {
     }
 
     @Test
-    public void testDefaultsMatchV26() {
+    public void testFreshNativeInstallDefaults() {
         Assert.assertEquals("dusk", pm.getScene());
-        Assert.assertFalse(pm.isAudioEnabled());
+        Assert.assertTrue(pm.isAudioEnabled());
         Assert.assertTrue(pm.isAmbienceEnabled());
         Assert.assertEquals(0.45f, pm.getVolume(), 0.001f);
         Assert.assertEquals(0.22f, pm.getMusicVolume(), 0.001f);
@@ -109,9 +109,34 @@ public class PreferencesManagerTest {
         Assert.assertEquals("rasengan", pm.getTechnique());
         Assert.assertEquals("jutsu", pm.getHighlightSound());
         Assert.assertTrue(pm.isMotionEnabled());
-        Assert.assertEquals(0, pm.getRotationSeconds());
-        Assert.assertEquals(0, pm.getIdleSeconds());
+        Assert.assertEquals(60, pm.getRotationSeconds());
+        Assert.assertEquals(900, pm.getIdleSeconds());
         Assert.assertNull(pm.getPins());
+    }
+
+    @Test
+    public void testSavedSettingsSurviveNewDefaults() {
+        MockSharedPreferences saved = new MockSharedPreferences();
+        PreferencesManager previous = new PreferencesManager(saved);
+        previous.setMotionEnabled(false);
+        previous.setAudioEnabled(false);
+        previous.setAmbienceEnabled(false);
+        previous.setRotationSeconds(0);
+        previous.setIdleSeconds(300);
+        previous.setTechnique("gamabunta");
+        Map<String, ?> before = saved.getAll();
+
+        PreferencesManager updated = new PreferencesManager(saved);
+        Assert.assertFalse(updated.isMotionEnabled());
+        Assert.assertFalse(updated.isAudioEnabled());
+        Assert.assertFalse(updated.isAmbienceEnabled());
+        Assert.assertEquals(0, updated.getRotationSeconds());
+        Assert.assertEquals(300, updated.getIdleSeconds());
+        Assert.assertEquals("gamabunta", updated.getTechnique());
+        Assert.assertEquals(before, saved.getAll());
+        updated.setIdleSeconds(0);
+        Assert.assertEquals("Explicitly disabled idle stays disabled", 0,
+                new PreferencesManager(saved).getIdleSeconds());
     }
 
     @Test

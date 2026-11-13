@@ -1,0 +1,4 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item><shape><solid android:color="#102b38"/><size android:width="320dp" android:height="180dp"/></shape></item>
+    <item android:drawable="@drawable/konoha_icon" android:width="140dp" android:height="140dp" android:gravity="center"/>
+</layer-list>

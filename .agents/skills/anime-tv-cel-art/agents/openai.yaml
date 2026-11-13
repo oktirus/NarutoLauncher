@@ -1,0 +1,4 @@
+interface:
+  display_name: "Anime TV Cel Art"
+  short_description: "Кадри у стилі TV аніме за візуальними референсами"
+  default_prompt: "Використай $anime-tv-cel-art і створи сцену у стилі телевізійного аніме за референсами, з чіткими контурами та простими cel-тінями."

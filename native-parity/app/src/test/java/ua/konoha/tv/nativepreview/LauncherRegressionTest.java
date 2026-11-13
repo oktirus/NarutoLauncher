@@ -79,6 +79,107 @@ public class LauncherRegressionTest {
         assertNull("Home leaves the game", field(activity, "activePanel"));
     }
 
+    @Test public void firstOpenFocusesFirstAppWithoutDelayedInput() throws Exception {
+        ShadowChoreographer.setPaused(true);
+        controller = Robolectric.buildActivity(MainActivity.class).create().start();
+        MainActivity activity = controller.get();
+        View brand = field(activity, "brandBtn");
+        assertTrue(brand.requestFocusFromTouch());
+        controller.resume().visible();
+        drain((ExecutorService) field(field(activity, "appManager"), "executor"));
+        layout(activity);
+        DockView dock = field(activity, "dockView");
+        assertSame(dock.getFirstCard(), focused(activity));
+        assertSame("Aura is ready without a D-pad press", dock.getFirstCard(),
+                field(field(activity, "chakraFocusView"), "targetView"));
+    }
+
+    @Test public void homeIntentFocusesFirstAppInsteadOfRememberedCard() throws Exception {
+        MainActivity activity = start();
+        DockView dock = field(activity, "dockView");
+        ViewGroup cards = (ViewGroup) dock.getFirstCard().getParent();
+        assertTrue(cards.getChildCount() > 2);
+        assertTrue(cards.getChildAt(1).requestFocusFromTouch());
+        call(activity, "openSettings");
+        controller.newIntent(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME));
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16));
+        assertSame(dock.getFirstCard(), focused(activity));
+        assertSame(dock.getFirstCard(), field(field(activity, "chakraFocusView"), "targetView"));
+    }
+
+    @Test public void homeWhilePausedFocusesFirstAppAfterResume() throws Exception {
+        MainActivity activity = start();
+        DockView dock = field(activity, "dockView");
+        ViewGroup cards = (ViewGroup) dock.getFirstCard().getParent();
+        assertTrue(cards.getChildAt(1).requestFocusFromTouch());
+        controller.pause();
+        controller.newIntent(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME));
+        controller.resume();
+        drain((ExecutorService) field(field(activity, "appManager"), "executor"));
+        layout(activity);
+        assertSame(dock.getFirstCard(), focused(activity));
+        assertSame(dock.getFirstCard(), field(field(activity, "chakraFocusView"), "targetView"));
+    }
+
+    @Test public void homeWithNoPinnedAppsFocusesArchive() throws Exception {
+        MainActivity activity = start();
+        PreferencesManager prefs = field(activity, "prefs");
+        prefs.setPins(List.of());
+        DockView dock = field(activity, "dockView");
+        dock.render();
+        controller.newIntent(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME));
+        assertSame(dock.getArchiveCard(), focused(activity));
+        assertSame(dock.getArchiveCard(), field(field(activity, "chakraFocusView"), "targetView"));
+    }
+
+    @Test public void ordinaryResumePreservesRememberedApp() throws Exception {
+        MainActivity activity = start();
+        DockView dock = field(activity, "dockView");
+        ViewGroup cards = (ViewGroup) dock.getFirstCard().getParent();
+        View second = cards.getChildAt(1);
+        assertTrue(second.requestFocusFromTouch());
+        String packageName = ((AppItem) second.getTag()).getPackageName();
+        controller.pause().resume();
+        drain((ExecutorService) field(field(activity, "appManager"), "executor"));
+        layout(activity);
+        assertSame(dock.findCardByPackage(packageName), focused(activity));
+    }
+
+    @Test public void initialAuraUsesFirstMeasuredBoundsWithoutGlidingFromOrigin() throws Exception {
+        MainActivity activity = start();
+        android.widget.ImageView emblem = new android.widget.ImageView(activity);
+        LinearLayout card = new LinearLayout(activity);
+        card.addView(emblem, new LinearLayout.LayoutParams(100, 100));
+        TechniqueRenderer renderer = field(activity, "techniqueRenderer");
+        ChakraFocusView aura = new ChakraFocusView(activity, renderer);
+        aura.setTargetView(card);
+        android.widget.FrameLayout root = field(activity, "rootLayout");
+        root.addView(card, new android.widget.FrameLayout.LayoutParams(100, 100));
+        root.addView(aura, new android.widget.FrameLayout.LayoutParams(-1, -1));
+        layout(activity);
+        Bitmap bitmap = Bitmap.createBitmap(aura.getWidth(), aura.getHeight(), Bitmap.Config.ARGB_8888);
+        try {
+            aura.draw(new Canvas(bitmap));
+            assertEquals((Float) field(aura, "targetCx"), (Float) field(aura, "currentCx"), 0.01f);
+            assertEquals((Float) field(aura, "targetCy"), (Float) field(aura, "currentCy"), 0.01f);
+            assertTrue((Float) field(aura, "currentR") > 0f);
+        } finally { root.removeView(aura); root.removeView(card); bitmap.recycle(); }
+    }
+
+    @Test public void aboutCreditsOktirusAndNativeAsPrimary() throws Exception {
+        MainActivity activity = start();
+        call(activity, "showAboutDialog");
+        android.app.AlertDialog dialog = org.robolectric.shadows.ShadowAlertDialog.getLatestAlertDialog();
+        try {
+            TextView message = dialog.findViewById(android.R.id.message);
+            String text = message.getText().toString();
+            assertTrue(text.contains("Розробник: Oktirus"));
+            assertTrue(text.contains("Основна версія"));
+            assertTrue(text.contains("Chromium"));
+            assertFalse(text.contains("ua.konoha.tv.nativepreview"));
+        } finally { dialog.dismiss(); }
+    }
+
     @Test public void motionOffKeepsChidoriFrameStatic() throws Exception {
         MainActivity activity = start();
         ChakraFocusView focus = field(activity, "chakraFocusView");
@@ -292,6 +393,7 @@ public class LauncherRegressionTest {
                     View.MeasureSpec.makeMeasureSpec(768, View.MeasureSpec.EXACTLY));
             root.layout(0, 0, 1366, 768);
         }
+        root.getViewTreeObserver().dispatchOnGlobalLayout();
         return root;
     }
 

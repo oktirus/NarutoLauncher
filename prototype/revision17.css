@@ -1,0 +1,19 @@
+/* Explicit order controls are usable with a remote, keyboard, mouse or touch. */
+.clock{background:none;padding:0;border-radius:0}
+/* Fit the actual favorites and archive; small screens retain readable scrolling cards. */
+.app-dock{grid-template-columns:repeat(var(--dock-count,7),minmax(0,1fr))}
+@media(max-width:900px){.app-dock{grid-template-columns:repeat(var(--dock-count,7),minmax(108px,1fr))}}
+.library-toolbar{flex-wrap:wrap;gap:10px}
+.order-instructions{margin-top:0}
+.order-status{min-height:2.6em;color:#e3bd80;font-size:13px;margin-bottom:12px}
+.favorite-order{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.order-row{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #b79b682e;background:#0b2530;border-radius:4px}
+.order-row.on-home{border-left:3px solid #d7aa64}
+.order-number{color:#c3b18d;font-size:13px;min-width:20px;text-align:center}
+.order-icon{width:52px;height:52px;display:grid;place-items:center;flex-shrink:0;color:#e9d8ab}
+.order-icon img{width:100%;height:100%;object-fit:contain}
+.order-info{min-width:0;flex:1}.order-info strong{display:block;font-size:15px;overflow-wrap:anywhere}.order-info small{display:block;font-size:11px;color:#acbeb8;margin-top:4px}
+.order-buttons{display:flex;gap:7px}.order-move{width:42px;height:42px;border:1px solid #a9946b88;background:#183a47;color:#f1dcb2;border-radius:4px;font-size:23px}
+.order-move:focus-visible{outline:2px solid #efab59;outline-offset:3px;background:#36505b}
+.order-move:disabled{opacity:.25;cursor:default}
+@media(max-width:560px){.order-row{gap:8px;padding:10px 8px}.order-icon{width:36px;height:42px}.order-info strong{font-size:12px}.order-info small{font-size:9px}.order-number{min-width:12px}.order-move{width:34px;height:38px}.order-buttons{gap:5px}.order-status{font-size:11px}}

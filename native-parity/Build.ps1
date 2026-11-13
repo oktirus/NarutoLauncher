@@ -43,7 +43,18 @@ try {
         throw 'Build did not produce an APK.'
     }
     
-    $outputApk = Join-Path $releasesDir 'KonohaNative-1.0.0-debug.apk'
+    $aapt = Join-Path $AndroidSdk 'build-tools/34.0.0/aapt.exe'
+    if (-not (Test-Path -LiteralPath $aapt)) { throw 'Android build-tools 34.0.0 are required.' }
+    $badging = (& $aapt dump badging $apk) -join "`n"
+    if ($LASTEXITCODE -ne 0 -or $badging -notmatch "package: name='([^']+)' versionCode='(\d+)' versionName='([^']+)'") {
+        throw 'Unable to verify APK version metadata.'
+    }
+    $packageName = $Matches[1]
+    $versionCode = [int]$Matches[2]
+    $versionName = $Matches[3]
+    if ($packageName -ne 'ua.konoha.tv.nativeparity') { throw 'Unexpected APK applicationId.' }
+    $fileVersion = $versionName -replace '[^A-Za-z0-9._-]', '-'
+    $outputApk = Join-Path $releasesDir ("KonohaNative-$fileVersion-debug.apk")
     Copy-Item -LiteralPath $apk -Destination $outputApk -Force
 
     # Копіюємо звіти лінту та тестів
@@ -71,9 +82,9 @@ try {
         file = [IO.Path]::GetFileName($outputApk)
         bytes = $fileBytes
         sha256 = $fileHash
-        package = 'ua.konoha.tv.nativeparity'
-        versionCode = 1
-        versionName = '1.0.0-native-parity'
+        package = $packageName
+        versionCode = $versionCode
+        versionName = $versionName
         signing = 'local Android debug key; native parity build'
         debuggable = $true
         build_staging = $buildRoot

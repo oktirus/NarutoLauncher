@@ -3,11 +3,11 @@ const { execSync, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const WORK_DIR = 'E:\\файли\\Робота\\Network\\NarutoLauncher';
+const WORK_DIR = __dirname;
 const FRAMES_DIR = path.join(WORK_DIR, 'compare_frames');
 if (!fs.existsSync(FRAMES_DIR)) fs.mkdirSync(FRAMES_DIR, { recursive: true });
 
-const CHROME_PATH = 'C:\\Users\\angel\\AppData\\Local\\ms-playwright\\chromium-1243\\chrome-win64\\chrome.exe';
+const CHROME_PATH = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined;
 const ADB_DEVICE = '192.168.100.26:5555';
 
 // Unified remote keys definition
@@ -464,7 +464,7 @@ function stitchSideBySide() {
   execSync(cmd, { stdio: 'inherit' });
 
   // Copy output to artifacts
-  const artMp4 = path.join('C:\\Users\\angel\\.gemini\\antigravity-cli\\brain\\7a75de26-a1ae-4e02-b7c4-36afa28fad09', 'compare_full_launcher_side_by_side.mp4');
+  const artMp4 = path.join(process.env.KONOHA_ARTIFACT_DIR || path.join(WORK_DIR, 'verification', 'comparisons'), 'compare_full_launcher_side_by_side.mp4');
   fs.copyFileSync(outputMp4, artMp4);
 
   console.log('\n======================================================');

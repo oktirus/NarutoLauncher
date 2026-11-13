@@ -1,0 +1,13 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'ua.konoha.tv'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'ua.konoha.tv'
+        minSdk 26
+        targetSdk 34
+        versionCode 26
+        versionName '1.0.0-v26'
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}

@@ -1,6 +1,10 @@
-# NarutoLauncher Native v1 (Preview)
+# Naruto · Коноха — основний нативний лаунчер
 
-Нативна реалізація основних функцій лаунчера **Konoha (Naruto)** на базі **Android Views + Custom Canvas (Java 17)** як незалежна альтернатива веб-оболонці v26. Ціль — Android TV, зокрема Lenovo IdeaPad 120S з LineageOS Android 14 TV. Приймання на цьому пристрої ще не проведено.
+Основна версія лаунчера **Naruto · Коноха**, розробник **Oktirus**. Реалізована на **Android Views + Custom Canvas (Java 17)** для Android TV. Chromium/WebView v26 збережено як альтернативну версію в `../android/` і `../prototype/`. На Lenovo проведено живі перевірки попередніх збірок; це не означає приймання кожної наступної зміни на пристрої.
+
+На чистому встановленні увімкнено «Живий світ», звуки технік і музику Naruto; зміна сцен — кожні 60 секунд, режим спокою — через 15 хвилин. Початкова техніка — Расенґан; наступна в каталозі — Расенсюрикен. Збережені користувацькі значення після оновлення не перезаписуються.
+
+При першому відкритті та надходженні системного Home intent фокус і ефект техніки встановлюються на першу картку застосунку; якщо обране порожнє — на «Весь архів». Звичайне повернення з іншого застосунку зберігає попередню картку. Вкладка «Про Коноху» містить актуальний опис і розробника.
 
 Актуальний результат перевірки та виправлень координатора: [Codex final review](reviews/codex-native-final-review.md). Попередні висновки агентів стосуються старих APK; вони не є підтвердженням поточного кандидата. Локальний програмний рендер Views і тести не доводять повний візуальний паритет, PSS або роботу звуку на TV.
 
@@ -17,9 +21,19 @@
   - `MediaPlayer` зі стрімінгом з файлових дескрипторів ресурсів для фонової музики Naruto OST із плавним кросфейдом, регулюванням гучності та зупинкою у фоновому режимі.
 - **Збереження стану:** Нативний `SharedPreferences` зі строгою схемою `konoha_preferences_v1`, валідацією значень за замовчуванням та конвертером для сумісності з `localStorage` v26.
 - **Пакет і конфігурація:**
-  - `applicationId`: `ua.konoha.tv.nativepreview` (окремий від `ua.konoha.tv` v26, щоб не замінювати встановлений продукт).
-  - `label`: `Naruto · Коноха (Native Preview)`.
-  - Категорії: `LAUNCHER`, `LEANBACK_LAUNCHER`. **Категорія HOME навмисно виключена**, щоб збірка попереднього перегляду не конфліктувала з основним системним лаунчером.
+  - `applicationId`: `ua.konoha.tv.nativeparity` (окремий від `ua.konoha.tv` v26).
+  - `label`: `Naruto · Коноха`.
+  - Категорії: `HOME`, `DEFAULT`, `LAUNCHER`, `LEANBACK_LAUNCHER`. Вибір основного HOME підтверджує користувач у системному інтерфейсі.
+
+### Вибір домашнього екрана
+
+Після першого запуску, якщо Коноха ще не є основним HOME, з'являється пропозиція з кнопками «Обрати» та «Пізніше». Вона не повторюється після відкладення чи закриття. Якщо Коноха вже основна, пропозиції немає. Одразу після встановлення APK інтерфейс не відкривається: спершу потрібно запустити застосунок.
+
+Повторний вибір доступний через **Шлях ніндзя → Домашній екран**. Рядок показує «Коноха · активний» або «Зробити основним» і оновлюється після повернення із системних налаштувань.
+
+На Android 10+ застосунок перевіряє доступність `RoleManager.ROLE_HOME` і викликає системний запит згоди. Для інших випадків відкриває `Settings.ACTION_HOME_SETTINGS`, потім пробує налаштування застосунків за замовчуванням. Якщо прошивка не надає жодного з цих екранів, показується пояснення; прихованої зміни HOME чи вимкнення штатного лаунчера немає. API: [RoleManager](https://developer.android.com/reference/android/app/role/RoleManager), [HOME settings](https://developer.android.com/reference/android/provider/Settings#ACTION_HOME_SETTINGS).
+
+Прапорець одноразової пропозиції зберігається окремо в `home_screen_setup`; існуючі налаштування сцени, техніки, звуку та обраного не змінюються. Локальні перевірки охоплюють Android API 28 і 35; приймання цієї функції на фізичних TV ще не проведено.
 
 ---
 
@@ -70,7 +84,7 @@
 Збірка здійснюється за допомогою скрипта `Build.ps1`, який використовує ізольовану ASCII-директорію для уникнення проблем Gradle з кириличними символами у шляху робочої області:
 
 ```powershell
-pwsh -NoProfile -File .\NarutoLauncher\native\Build.ps1
+pwsh -NoProfile -File .\native-parity\Build.ps1
 ```
 
 Скрипт перевіряє:
@@ -79,14 +93,16 @@ pwsh -NoProfile -File .\NarutoLauncher\native\Build.ps1
 3. Виконує локальні unit-тести (`./gradlew testDebugUnitTest`).
 4. Виконує перевірку лінтером (`./gradlew lintDebug`).
 5. Збирає дебаг-пакет (`./gradlew assembleDebug`).
-6. Копіює фінальний APK у `NarutoLauncher/native/releases/KonohaNative-1.0.0-debug.apk` та формує маніфест з контрольними сумами SHA-256.
+6. Копіює фінальний APK у `native-parity/releases/KonohaNative-<versionName>-debug.apk` та формує маніфест з фактичними package/version і SHA-256. Для 1.1.0: `KonohaNative-1.1.0-debug.apk`.
 
 Тестова залежність Robolectric 4.14.1 використовується лише JVM-тестами і не потрапляє в APK. Знімки програмного Skia-рендеру зберігаються в `verification/native-ui/`. Додаткові перевірки:
 
 ```powershell
-python .\NarutoLauncher\native\verification\audio_regression_probe.py
-python .\NarutoLauncher\native\verification\verify_candidate.py
+python .\native\verification\audio_regression_probe.py
+python .\native\verification\verify_candidate.py
 ```
+
+Ці два допоміжні probes належать локальному історичному архіву `native/verification/` і не є залежностями актуальної збірки з GitHub. Оновлення через Releases описано в [docs/UPDATES.md](../docs/UPDATES.md).
 
 ---
 

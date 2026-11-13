@@ -151,6 +151,12 @@ public class ChakraFocusView extends View {
 
         if (view != null) {
             View emblem = findEmblemView(view);
+            // Initial focus can arrive before layout; the first draw will use the real bounds.
+            if (emblem.getWidth() == 0 || emblem.getHeight() == 0) {
+                startAnimationLoop();
+                invalidate();
+                return;
+            }
             emblem.getLocationInWindow(targetLocation);
             getLocationInWindow(overlayLocation);
             float left = targetLocation[0] - overlayLocation[0];

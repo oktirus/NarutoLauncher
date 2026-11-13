@@ -1,5 +1,7 @@
 package ua.konoha.tv.nativepreview;
 
+import ua.konoha.tv.nativepreview.updates.UpdateController;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
@@ -14,6 +16,7 @@ import android.view.*;
 import android.widget.*;
 
 import ua.konoha.tv.nativepreview.apps.AppManager;
+import ua.konoha.tv.nativepreview.apps.HomeScreenSetup;
 import ua.konoha.tv.nativepreview.audio.AudioController;
 import ua.konoha.tv.nativepreview.model.AppItem;
 import ua.konoha.tv.nativepreview.model.CatalogData;
@@ -32,6 +35,7 @@ import java.util.Locale;
 public class MainActivity extends Activity {
     private PreferencesManager prefs;
     private AppManager appManager;
+    private HomeScreenSetup homeScreenSetup;
     private AudioController audioController;
     private TechniqueRenderer techniqueRenderer;
 
@@ -68,7 +72,16 @@ public class MainActivity extends Activity {
     private String lastFocusedPackage = null;
     private boolean lastFocusedIsLibrary = false;
     private boolean activityResumed;
+    private UpdateController updateController;
+    private final Runnable updateCheckRunnable = () -> {
+        if (updateController != null) updateController.checkAutomatically();
+    };
+    private boolean appInventoryReady;
+    private boolean focusFirstAppOnHomeEntry = true;
     private ViewTreeObserver.OnGlobalFocusChangeListener focusChangeListener;
+    private final ViewTreeObserver.OnGlobalLayoutListener homeEntryLayoutListener = () -> {
+        if (focusFirstAppOnHomeEntry) restoreHomeFocus();
+    };
 
     // Timers
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -98,6 +111,11 @@ public class MainActivity extends Activity {
         // 1. Ініціалізація підсистем
         prefs = new PreferencesManager(this);
         appManager = new AppManager(this, prefs);
+        homeScreenSetup = new HomeScreenSetup(this);
+        updateController = new UpdateController(this, () -> activityResumed && hasWindowFocus()
+                && activePanel == null && ambientOverlay != null && ambientOverlay.getVisibility() != View.VISIBLE
+                && !homeScreenSetup.isPromptShowing() && !audioController.isLaunching()
+                && !updateController.isShowing());
         audioController = new AudioController(this, prefs);
         techniqueRenderer = new TechniqueRenderer(this);
 
@@ -110,12 +128,6 @@ public class MainActivity extends Activity {
         dockView.render();
         wireSpatialNavigation();
         updateClock();
-        View firstCard = dockView.getFirstCard();
-        if (firstCard != null) {
-            lastFocusedView = firstCard;
-            lastFocusedPackage = firstCard.getTag() instanceof AppItem ? ((AppItem) firstCard.getTag()).getPackageName() : null;
-            lastFocusedIsLibrary = false;
-        }
         restoreHomeFocus();
 
         // 4. Запуск аудіо та таймерів
@@ -123,18 +135,6 @@ public class MainActivity extends Activity {
         setupTimers();
         resetIdleTimer();
 
-        // Початковий фокус на перший елемент дока
-        mainHandler.postDelayed(() -> {
-            if (activityResumed && activePanel == null && ambientOverlay.getVisibility() != View.VISIBLE) {
-                View fc = dockView.getFirstCard();
-                if (fc != null) {
-                    lastFocusedView = fc;
-                    lastFocusedPackage = fc.getTag() instanceof AppItem ? ((AppItem) fc.getTag()).getPackageName() : null;
-                    lastFocusedIsLibrary = false;
-                }
-                restoreHomeFocus();
-            }
-        }, 150);
     }
 
     private void buildLayout() {
@@ -218,6 +218,7 @@ public class MainActivity extends Activity {
                     && !isInside(newFocus, modalContainer) && !isInside(newFocus, ambientOverlay)) rememberHomeFocus(newFocus);
         };
         rootLayout.getViewTreeObserver().addOnGlobalFocusChangeListener(focusChangeListener);
+        rootLayout.getViewTreeObserver().addOnGlobalLayoutListener(homeEntryLayoutListener);
     }
 
     private LinearLayout createTopBar() {
@@ -584,10 +585,10 @@ public class MainActivity extends Activity {
 
     private void restoreHomeFocus() {
         if (!activityResumed || activePanel != null || ambientOverlay.getVisibility() == View.VISIBLE) return;
-        View target = null;
-        if (lastFocusedIsLibrary) {
+        View target = focusFirstAppOnHomeEntry ? dockView.getFirstCard() : null;
+        if (!focusFirstAppOnHomeEntry && lastFocusedIsLibrary) {
             target = dockView.getArchiveCard();
-        } else if (lastFocusedPackage != null) {
+        } else if (!focusFirstAppOnHomeEntry && lastFocusedPackage != null) {
             target = dockView.findCardByPackage(lastFocusedPackage);
         }
         if (target == null && lastFocusedView != null && lastFocusedView.isAttachedToWindow()) {
@@ -601,14 +602,15 @@ public class MainActivity extends Activity {
             boolean inDock = isInside(target, dockView);
             chakraFocusView.setTargetView(inDock ? target : null);
             target.requestFocusFromTouch();
-            target.requestFocus();
+            if (target.requestFocus() && appInventoryReady && target.isLaidOut()) focusFirstAppOnHomeEntry = false;
             final View fTarget = target;
             fTarget.post(() -> {
                 if (!activityResumed || activePanel != null || ambientOverlay.getVisibility() == View.VISIBLE
-                        || !fTarget.isAttachedToWindow()) return;
+                        || !fTarget.isAttachedToWindow() || lastFocusedView != fTarget) return;
                 fTarget.requestFocusFromTouch();
                 if (fTarget.requestFocus()) {
                     chakraFocusView.setTargetView(isInside(fTarget, dockView) ? fTarget : null);
+                    if (appInventoryReady && fTarget.isLaidOut()) focusFirstAppOnHomeEntry = false;
                 }
             });
         }
@@ -739,6 +741,8 @@ public class MainActivity extends Activity {
                 @Override public void onTechniquesRequested() { openTechniques(); }
                 @Override public void onAmbientRequested() { enterAmbient(); }
                 @Override public void onSystemSettingsRequested(String target) { appManager.openSettings(target); }
+                @Override public void onHomeScreenRequested() { homeScreenSetup.openSelection(); }
+                @Override public void onUpdatesRequested() { updateController.checkManually(); }
                 @Override public void onRefreshAppsRequested() {
                     appManager.reloadAppsAsync(() -> {
                         if (!activityResumed || isDestroyed()) return;
@@ -754,6 +758,7 @@ public class MainActivity extends Activity {
         }
         showPanel(settingsPanel);
         settingsPanel.updateState();
+        settingsPanel.setHomeScreenActive(homeScreenSetup.isDefaultHome());
         audioController.playUiSound();
     }
 
@@ -771,13 +776,15 @@ public class MainActivity extends Activity {
     private void showAboutDialog() {
         new AlertDialog.Builder(this)
                 .setTitle("Коноха · Воля вогню")
-                .setMessage("Нативна версія NarutoLauncher v1.\n\n"
-                        + "• Реалізація: Android Views + Custom Canvas (Java 17)\n"
+                .setMessage("Основна версія Naruto · Коноха.\n"
+                        + "Розробник: Oktirus\n\n"
+                        + "Твій домашній екран у світі Наруто:\n"
                         + "• 18 шпалер Конохи з паралаксом і частинками\n"
-                        + "• 10 технік навігації, зокрема процедурний Чідорі та стрибок Гамабунти\n"
+                        + "• 10 технік навігації та звуки дзюцу\n"
+                        + "• Улюблені застосунки у власному порядку\n"
                         + "• Мінігра «Шлях шинобі» з Наруто та Гамабунтою\n"
-                        + "• Музика Naruto OST MUSASHI PROJECT\n"
-                        + "• Окремий package: ua.konoha.tv.nativepreview\n\n"
+                        + "• Музика Naruto OST MUSASHI PROJECT\n\n"
+                        + "Нативний лаунчер — основний. Версія на Chromium залишається альтернативною.\n\n"
                         + "Права на Naruto належать їхнім власникам. Фанатський лаунчер.")
                 .setPositiveButton("Зрозуміло", null)
                 .show();
@@ -841,7 +848,8 @@ public class MainActivity extends Activity {
         int idleSec = prefs.getIdleSeconds();
         if (idleSec > 0) {
             idleRunnable = () -> {
-                if (activePanel == null && ambientOverlay.getVisibility() != View.VISIBLE) {
+                if (activePanel == null && ambientOverlay.getVisibility() != View.VISIBLE
+                        && !homeScreenSetup.isPromptShowing() && !updateController.isShowing()) {
                     enterAmbient();
                 } else {
                     resetIdleTimer();
@@ -901,6 +909,8 @@ public class MainActivity extends Activity {
         super.onNewIntent(intent);
         setIntent(intent);
         if (Intent.ACTION_MAIN.equals(intent.getAction()) && intent.hasCategory(Intent.CATEGORY_HOME)) {
+            updateController.cancel();
+            focusFirstAppOnHomeEntry = true;
             audioController.cancelPendingLaunch();
             audioController.stopTechniquePreview();
             toastOverlay.hide();
@@ -913,8 +923,10 @@ public class MainActivity extends Activity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus && activityResumed && activePanel == null && (ambientOverlay == null || ambientOverlay.getVisibility() != View.VISIBLE)) {
+        if (hasFocus && activityResumed && activePanel == null && !updateController.isShowing()
+                && (ambientOverlay == null || ambientOverlay.getVisibility() != View.VISIBLE)) {
             restoreHomeFocus();
+            homeScreenSetup.showFirstRunPrompt();
         }
     }
 
@@ -931,6 +943,8 @@ public class MainActivity extends Activity {
         );
         appManager.reloadAppsAsync(() -> {
             if (!activityResumed || isDestroyed()) return;
+            // Keep the entry focus request until the asynchronous app inventory is published.
+            appInventoryReady = true;
             dockView.render();
             wireSpatialNavigation();
             if (activePanel == null && ambientOverlay.getVisibility() != View.VISIBLE) {
@@ -960,6 +974,10 @@ public class MainActivity extends Activity {
             techniquesPanel.renderTechniques();
         }
         audioController.resumeMusic();
+        if (settingsPanel != null) settingsPanel.setHomeScreenActive(homeScreenSetup.isDefaultHome());
+        updateController.onResume();
+        mainHandler.removeCallbacks(updateCheckRunnable);
+        mainHandler.postDelayed(updateCheckRunnable, 30000);
         setupTimers();
         resetIdleTimer();
     }
@@ -967,6 +985,8 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         activityResumed = false;
+        mainHandler.removeCallbacks(updateCheckRunnable);
+        updateController.cancel();
         audioController.cancelPendingLaunch();
         toastOverlay.hide();
         audioController.pauseMusic();
@@ -1002,6 +1022,7 @@ public class MainActivity extends Activity {
         mainHandler.removeCallbacksAndMessages(null);
         if (focusChangeListener != null && rootLayout != null && rootLayout.getViewTreeObserver().isAlive()) {
             rootLayout.getViewTreeObserver().removeOnGlobalFocusChangeListener(focusChangeListener);
+            rootLayout.getViewTreeObserver().removeOnGlobalLayoutListener(homeEntryLayoutListener);
         }
         if (runnerGameView != null) runnerGameView.release();
         if (techniquesPanel != null) techniquesPanel.release();
@@ -1012,6 +1033,8 @@ public class MainActivity extends Activity {
         if (ambientOverlay != null) ambientOverlay.pause();
         if (techniqueRenderer != null) techniqueRenderer.release();
         appManager.release();
+        if (homeScreenSetup != null) homeScreenSetup.close();
+        if (updateController != null) updateController.close();
         audioController.release();
         super.onDestroy();
     }

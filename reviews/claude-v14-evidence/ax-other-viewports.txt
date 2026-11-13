@@ -1,6 +1,0 @@
-== 1920x1080 sai
-{"role":"button","name":"Увімкнути атмосферу","nameSources":[{"type":"attribute","attr":"aria-label","val":"Увімкнути атмосферу"},{"type":"contents","val":"Увімкнути атмосферу","superseded":true}],"props":"invalid=false,focusable=true,pressed=false","dom":{"w":1920,"h":1080,"attr":"Увімкнути атмосферу","pressedAttr":"false","visible":"none"}}
-== 390x844 sai
-{"role":"button","name":"Увімкнути атмосферу","nameSources":[{"type":"attribute","attr":"aria-label","val":"Увімкнути атмосферу"},{"type":"contents","val":"Увімкнути атмосферу","superseded":true}],"props":"invalid=false,focusable=true,pressed=false","dom":{"w":390,"h":844,"attr":"Увімкнути атмосферу","pressedAttr":"false","visible":"none"}}
-== 1280x600 sai
-{"role":"button","name":"Увімкнути атмосферу","nameSources":[{"type":"attribute","attr":"aria-label","val":"Увімкнути атмосферу"},{"type":"contents","val":"Увімкнути атмосферу Атмосфера","superseded":true}],"props":"invalid=false,focusable=true,pressed=false","dom":{"w":1280,"h":600,"attr":"Увімкнути атмосферу","pressedAttr":"false","visible":"\"Атмосфера\""}}
