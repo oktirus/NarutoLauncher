@@ -49,29 +49,24 @@ public class VillageBackgroundView extends View {
     private boolean isMotionEnabled = true;
     private boolean isDecorPaused = false;
     private long lastFrameTime = 0;
+    private long decorFrameTime = 0;
 
     private final Runnable animationRunnable = new Runnable() {
         @Override
         public void run() {
-            if (disposed || activityPaused) return;
-            if (isAttachedToWindow() && getVisibility() == VISIBLE && isMotionEnabled) {
-                invalidate();
-            }
-            if (!activityPaused && isAttachedToWindow()) {
-                postDelayed(this, 16);
-            }
+            if (!canRenderFrames() || !isMotionEnabled || isDecorPaused) return;
+            invalidate();
+            postOnAnimation(this);
         }
     };
 
     private final Runnable crossfadeRunnable = new Runnable() {
         @Override
         public void run() {
-            if (disposed || activityPaused) return;
-            if (isCrossfading && isAttachedToWindow()) {
+            if (!canRenderFrames()) return;
+            if (isCrossfading) {
                 invalidate();
-                if (isCrossfading) {
-                    postDelayed(this, 16);
-                }
+                postOnAnimation(this);
             }
         }
     };
@@ -195,13 +190,14 @@ public class VillageBackgroundView extends View {
 
     private void checkAnimationState() {
         removeCallbacks(animationRunnable);
-        if (!activityPaused && isAttachedToWindow()) {
+        if (canRenderFrames() && isMotionEnabled && !isDecorPaused) {
             lastFrameTime = System.currentTimeMillis();
-            post(animationRunnable);
+            postOnAnimation(animationRunnable);
         } else {
             invalidate();
         }
-        if (isCrossfading && !activityPaused && isAttachedToWindow()) post(crossfadeRunnable);
+        removeCallbacks(crossfadeRunnable);
+        if (isCrossfading && canRenderFrames()) postOnAnimation(crossfadeRunnable);
     }
 
     @Override
@@ -256,6 +252,7 @@ public class VillageBackgroundView extends View {
         if (w == 0 || h == 0) return;
 
         long now = System.currentTimeMillis();
+        if (decorFrameTime == 0 || (isMotionEnabled && !isDecorPaused)) decorFrameTime = now;
         float dt = lastFrameTime > 0 ? (now - lastFrameTime) / 1000f : 0.016f;
         if (dt > 0.05f) dt = 0.05f;
         lastFrameTime = now;
@@ -271,13 +268,13 @@ public class VillageBackgroundView extends View {
                 nextBitmap = null;
                 isCrossfading = false;
                 removeCallbacks(crossfadeRunnable);
-                drawScaledBitmap(canvas, currentBitmap, w, h, 255, now);
+                drawScaledBitmap(canvas, currentBitmap, w, h, 255, decorFrameTime);
             } else {
-                drawScaledBitmap(canvas, currentBitmap, w, h, 255, now);
-                drawScaledBitmap(canvas, nextBitmap, w, h, (int) (progress * 255), now);
+                drawScaledBitmap(canvas, currentBitmap, w, h, 255, decorFrameTime);
+                drawScaledBitmap(canvas, nextBitmap, w, h, (int) (progress * 255), decorFrameTime);
             }
         } else if (currentBitmap != null) {
-            drawScaledBitmap(canvas, currentBitmap, w, h, 255, now);
+            drawScaledBitmap(canvas, currentBitmap, w, h, 255, decorFrameTime);
         } else {
             canvas.drawColor(COLOR_DEFAULT_BG);
         }
@@ -334,7 +331,7 @@ public class VillageBackgroundView extends View {
                 }
 
                 paint.setColor((i % 2 == 0) ? color1 : color2);
-                paint.setAlpha((int) ((0.2f + Math.sin(now / 2000.0 + p.phase) * 0.1f) * 255));
+                paint.setAlpha((int) ((0.2f + Math.sin(decorFrameTime / 2000.0 + p.phase) * 0.1f) * 255));
 
                 canvas.save();
                 canvas.translate(p.x, p.y);
@@ -346,7 +343,7 @@ public class VillageBackgroundView extends View {
                     canvas.drawCircle(0, 0, "snow".equals(pMode) ? p.size * 0.8f : p.size * 0.5f, paint);
                 } else {
                     // Leaf shape
-                    canvas.rotate((float) Math.toDegrees(Math.sin(now / 1300.0 + p.phase) * 1.5));
+                    canvas.rotate((float) Math.toDegrees(Math.sin(decorFrameTime / 1300.0 + p.phase) * 1.5));
                     leafPath.reset();
                     leafPath.moveTo(-p.size, 0);
                     leafPath.quadTo(0, -p.size, p.size, 0);
@@ -370,7 +367,7 @@ public class VillageBackgroundView extends View {
         float scaledH = bmp.getHeight() * scale;
 
         float extra = (scaledW - w) / 2f;
-        float parallaxX = (isMotionEnabled && !isDecorPaused) ? (float) (Math.sin(now / 8000.0) * extra * 0.5f) : 0f;
+        float parallaxX = isMotionEnabled ? (float) (Math.sin(now / 8000.0) * extra * 0.5f) : 0f;
         float left = (w - scaledW) / 2f + parallaxX;
         float top = (h - scaledH) / 2f;
 

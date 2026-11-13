@@ -26,6 +26,30 @@ import static org.junit.Assert.*;
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @LooperMode(LooperMode.Mode.PAUSED)
 public class NativeUiRenderTest {
+    @Test public void renderFocusedLibraryEffects() throws Exception {
+        org.robolectric.shadows.ShadowChoreographer.setPaused(true);
+        new PreferencesManager(RuntimeEnvironment.getApplication()).setMotionEnabled(false);
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup().visible();
+        try {
+            MainActivity activity = controller.get();
+            flush(activity, "appManager", "executor");
+            flush(activity, "backgroundView", "bgExecutor");
+            NativeLifecycleTest.call(activity, "openLibrary");
+            layout(activity, 1366, 768);
+            ua.konoha.tv.nativepreview.panels.LibraryPanel panel = NativeLifecycleTest.field(activity, "libraryPanel");
+            ua.konoha.tv.nativepreview.apps.AppManager apps = NativeLifecycleTest.field(activity, "appManager");
+            View card = panel.findCardByPackage(apps.getAllApps().get(0).getPackageName());
+            assertTrue(card.requestFocusFromTouch());
+            for (String technique : new String[]{"chidori", "gamabunta"}) {
+                panel.setTechnique(technique);
+                ua.konoha.tv.nativepreview.views.TechniqueRenderer renderer = NativeLifecycleTest.field(activity, "techniqueRenderer");
+                for (String plate : ua.konoha.tv.nativepreview.views.TechniqueRenderer.platesFor(technique)) renderer.ensureBitmap(plate);
+                flush(activity, "techniqueRenderer", "decodeExecutor");
+                capture(activity, "library-focus-" + technique, 1366, 768);
+            }
+        } finally { controller.pause().stop().destroy(); }
+    }
+
     @Test public void renderHomeAndAllMainPanels() throws Exception {
         org.robolectric.shadows.ShadowChoreographer.setPaused(true);
         PreferencesManager prefs = new PreferencesManager(RuntimeEnvironment.getApplication());

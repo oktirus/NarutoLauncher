@@ -72,6 +72,9 @@ public class HeroTitleView extends View {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         float textSize = KonohaTheme.dp(getContext(), 78);
+        float lineHeight = line2.isEmpty() ? 1.15f : 1.95f;
+        int height = resolveSize((int) (textSize * lineHeight), heightMeasureSpec);
+        textSize = Math.min(textSize, height / lineHeight);
         line1Paint.setTextSize(textSize);
         line2Paint.setTextSize(textSize);
 
@@ -82,9 +85,8 @@ public class HeroTitleView extends View {
             bounds2.setEmpty();
         }
 
-        int height = (int) (textSize * (line2.isEmpty() ? 1.15f : 1.95f));
         int width = (int) (Math.max(bounds1.width(), bounds2.width()) + KonohaTheme.dp(getContext(), 32));
-        setMeasuredDimension(resolveSize(width, widthMeasureSpec), resolveSize(height, heightMeasureSpec));
+        setMeasuredDimension(resolveSize(width, widthMeasureSpec), height);
     }
 
     @Override

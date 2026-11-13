@@ -7,6 +7,7 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import ua.konoha.tv.nativepreview.theme.KonohaTheme;
 
@@ -22,6 +23,7 @@ public class KonohaSeekBar extends View {
     private int max = 100;
     private int progress = 45;
     private OnProgressChangeListener listener;
+    private boolean dragging;
 
     private final Paint trackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint progressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -80,6 +82,49 @@ public class KonohaSeekBar extends View {
             return true;
         }
         return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (!isEnabled()) return false;
+        switch (event.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN:
+                dragging = true;
+                requestFocus();
+                if (getParent() != null) getParent().requestDisallowInterceptTouchEvent(true);
+                updateFromTouch(event.getX());
+                return true;
+            case MotionEvent.ACTION_MOVE:
+                if (!dragging) return false;
+                updateFromTouch(event.getX());
+                return true;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                if (!dragging) return false;
+                dragging = false;
+                if (getParent() != null) getParent().requestDisallowInterceptTouchEvent(false);
+                if (event.getActionMasked() == MotionEvent.ACTION_UP) {
+                    updateFromTouch(event.getX());
+                    performClick();
+                }
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private void updateFromTouch(float x) {
+        float inset = KonohaTheme.dp(getContext(), 7);
+        float usableWidth = getWidth() - 2 * inset;
+        if (usableWidth <= 0) return;
+        float fraction = Math.max(0f, Math.min(1f, (x - inset) / usableWidth));
+        setProgress(Math.round(fraction * max / 5f) * 5);
+    }
+
+    @Override
+    public boolean performClick() {
+        super.performClick();
+        return true;
     }
 
     @Override

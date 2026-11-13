@@ -71,10 +71,10 @@ try {
         file = [IO.Path]::GetFileName($outputApk)
         bytes = $fileBytes
         sha256 = $fileHash
-        package = 'ua.konoha.tv.nativepreview'
+        package = 'ua.konoha.tv.nativeparity'
         versionCode = 1
-        versionName = '1.0.0-native-preview'
-        signing = 'local Android debug key; native preview build'
+        versionName = '1.0.0-native-parity'
+        signing = 'local Android debug key; native parity build'
         debuggable = $true
         build_staging = $buildRoot
         built_at = (Get-Date -Format 'o')

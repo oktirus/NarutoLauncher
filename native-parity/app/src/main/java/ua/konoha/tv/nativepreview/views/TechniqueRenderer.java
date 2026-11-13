@@ -262,6 +262,10 @@ public class TechniqueRenderer {
     }
 
     public void triggerGamabuntaJump(PointF from, PointF to, int direction, long now) {
+        triggerGamabuntaJump(frogState, from, to, direction, now);
+    }
+
+    public void triggerGamabuntaJump(FrogState frogState, PointF from, PointF to, int direction, long now) {
         float r = 45f;
         frogState.fromPos.set(from.x + r * 0.5f, from.y - r * 0.26f);
         frogState.toPos.set(to.x + r * 0.5f, to.y - r * 0.26f);
@@ -281,13 +285,18 @@ public class TechniqueRenderer {
      * Основний метод малювання техніки на Canvas з повною процедурною анімацією
      */
     public void drawTechnique(Canvas canvas, String id, float cx, float cy, float r, long timeMs, float burstLife, boolean isPreview) {
+        drawTechnique(canvas, id, cx, cy, r, timeMs, burstLife, isPreview, frogState);
+    }
+
+    public void drawTechnique(Canvas canvas, String id, float cx, float cy, float r, long timeMs,
+            float burstLife, boolean isPreview, FrogState frogState) {
         double t = timeMs / 1000.0;
         paint.reset();
         paint.setAntiAlias(true);
         paint.setFilterBitmap(true);
 
         if ("gamabunta".equals(id)) {
-            drawGamabunta(canvas, cx, cy, r, timeMs, isPreview);
+            drawGamabunta(canvas, cx, cy, r, timeMs, isPreview, frogState);
             return;
         }
 
@@ -1173,7 +1182,8 @@ public class TechniqueRenderer {
     /**
      * C11: Гамабунта — виправлено протилежні орієнтації спрайтів, відновлення alpha 255
      */
-    private void drawGamabunta(Canvas canvas, float cx, float cy, float r, long timeMs, boolean isPreview) {
+    private void drawGamabunta(Canvas canvas, float cx, float cy, float r, long timeMs,
+            boolean isPreview, FrogState frogState) {
         float perchX = cx + r * 0.5f;
         float perchY = cy - r * 0.26f;
 

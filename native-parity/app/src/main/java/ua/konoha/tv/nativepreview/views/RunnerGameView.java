@@ -11,7 +11,6 @@ import android.os.Looper;
 import android.view.accessibility.AccessibilityNodeInfo;
 import ua.konoha.tv.nativepreview.R;
 
-import ua.konoha.tv.nativepreview.game.RunnerHudLayout;
 import ua.konoha.tv.nativepreview.game.RunnerPhysics;
 import ua.konoha.tv.nativepreview.prefs.PreferencesManager;
 import ua.konoha.tv.nativepreview.theme.KonohaTheme;
@@ -40,6 +39,12 @@ public class RunnerGameView extends View {
     private volatile boolean disposed;
     private final Path shurikenPath = new Path();
     private final RectF stageRect = new RectF();
+    private final RectF narutoTab = new RectF();
+    private final RectF gamabuntaTab = new RectF();
+    private final RectF pauseButton = new RectF();
+    private final RectF closeButton = new RectF();
+    private final RectF slideButton = new RectF();
+    private final RectF jumpButton = new RectF();
 
     private Runnable onExitListener;
     private Runnable onSoundListener;
@@ -156,7 +161,7 @@ public class RunnerGameView extends View {
 
     public void togglePause() {
         if ("running".equals(runner.status)) pauseGame();
-        else if ("paused".equals(runner.status)) startGame();
+        else startGame();
     }
 
     public void jump() {
@@ -278,6 +283,32 @@ public class RunnerGameView extends View {
     }
 
     @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        updateControlBounds(w, h);
+    }
+
+    private void updateControlBounds(int w, int h) {
+        float tabY = KonohaTheme.dp(getContext(), 52);
+        float tabBottom = tabY + KonohaTheme.dp(getContext(), 28);
+        narutoTab.set(KonohaTheme.dp(getContext(), 24), tabY,
+                KonohaTheme.dp(getContext(), 108), tabBottom);
+        gamabuntaTab.set(KonohaTheme.dp(getContext(), 114), tabY,
+                KonohaTheme.dp(getContext(), 218), tabBottom);
+        pauseButton.set(w - KonohaTheme.dp(getContext(), 100), tabY,
+                w - KonohaTheme.dp(getContext(), 26), tabBottom);
+        closeButton.set(w - KonohaTheme.dp(getContext(), 36), KonohaTheme.dp(getContext(), 4),
+                w, KonohaTheme.dp(getContext(), 44));
+        float footY = h - KonohaTheme.dp(getContext(), 18);
+        float footTop = footY - KonohaTheme.dp(getContext(), 16);
+        float footBottom = footTop + KonohaTheme.dp(getContext(), 24);
+        slideButton.set(w - KonohaTheme.dp(getContext(), 190), footTop,
+                w - KonohaTheme.dp(getContext(), 110), footBottom);
+        jumpButton.set(w - KonohaTheme.dp(getContext(), 100), footTop,
+                w - KonohaTheme.dp(getContext(), 20), footBottom);
+    }
+
+    @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_UP) {
             performClick();
@@ -288,24 +319,21 @@ public class RunnerGameView extends View {
             float x = event.getX();
             float y = event.getY();
 
-            // Check if tapped hero buttons or action button
-            if (y < KonohaTheme.dp(getContext(), 80)) {
-                if (x < getWidth() * 0.3f && ("ready".equals(runner.status) || "over".equals(runner.status))) {
-                    toggleHero();
-                    return true;
-                } else if (x > getWidth() * 0.85f) {
-                    saveBestScore();
-                    if (onExitListener != null) onExitListener.run();
-                    return true;
+            if (closeButton.contains(x, y)) {
+                saveBestScore();
+                if (onExitListener != null) onExitListener.run();
+            } else if (pauseButton.contains(x, y)) {
+                togglePause();
+            } else if (narutoTab.contains(x, y) || gamabuntaTab.contains(x, y)) {
+                if ("ready".equals(runner.status) || "over".equals(runner.status)) {
+                    setHero(narutoTab.contains(x, y) ? "naruto" : "gamabunta");
                 }
-            } else if (y > getHeight() - KonohaTheme.dp(getContext(), 60)) {
-                if (x < getWidth() * 0.5f) crouch();
-                else jump();
-                return true;
-            } else {
+            } else if (slideButton.contains(x, y)) {
+                crouch();
+            } else if (jumpButton.contains(x, y) || stageRect.contains(x, y)) {
                 jump();
-                return true;
             }
+            return true;
         }
         return super.onTouchEvent(event);
     }
@@ -349,6 +377,7 @@ public class RunnerGameView extends View {
         int w = getWidth();
         int h = getHeight();
         if (w == 0 || h == 0) return;
+        updateControlBounds(w, h);
 
         // Dark background
         paint.setColor(KonohaTheme.COLOR_BG);
@@ -408,12 +437,9 @@ public class RunnerGameView extends View {
         // Hero Tabs: [ Наруто ] [ Гамабунта ]
         boolean isNaruto = "naruto".equals(runner.hero);
         float tabY = KonohaTheme.dp(getContext(), 52);
-        float tabH = KonohaTheme.dp(getContext(), 28);
-        float tabW1 = KonohaTheme.dp(getContext(), 84);
-        float tabW2 = KonohaTheme.dp(getContext(), 104);
 
-        drawHeroTab(canvas, KonohaTheme.dp(getContext(), 24), tabY, tabW1, tabH, "Наруто", isNaruto);
-        drawHeroTab(canvas, KonohaTheme.dp(getContext(), 114), tabY, tabW2, tabH, "Гамабунта", !isNaruto);
+        drawHeroTab(canvas, narutoTab.left, narutoTab.top, narutoTab.width(), narutoTab.height(), "Наруто", isNaruto);
+        drawHeroTab(canvas, gamabuntaTab.left, gamabuntaTab.top, gamabuntaTab.width(), gamabuntaTab.height(), "Гамабунта", !isNaruto);
 
         // Scores (Top right)
         paint.setTypeface(KonohaTheme.getNunitoBold(getContext()));
@@ -430,15 +456,15 @@ public class RunnerGameView extends View {
         canvas.drawText(bestStr, w - KonohaTheme.dp(getContext(), 200), tabY + 26, paint);
 
         // Pause button
-        drawPillButton(canvas, w - KonohaTheme.dp(getContext(), 100), tabY, KonohaTheme.dp(getContext(), 74), tabH,
+        drawPillButton(canvas, pauseButton.left, pauseButton.top, pauseButton.width(), pauseButton.height(),
                 "running".equals(runner.status) ? "⏸ Пауза" : "▶ Старт");
 
         // Close button 'x'
         paint.setColor(KonohaTheme.COLOR_PAPER);
         paint.setStrokeWidth(2f);
         paint.setStyle(Paint.Style.STROKE);
-        float cx = w - KonohaTheme.dp(getContext(), 18);
-        float cy = KonohaTheme.dp(getContext(), 24);
+        float cx = closeButton.centerX();
+        float cy = closeButton.centerY();
         float s = KonohaTheme.dp(getContext(), 6);
         canvas.drawLine(cx - s, cy - s, cx + s, cy + s, paint);
         canvas.drawLine(cx - s, cy + s, cx + s, cy - s, paint);
@@ -560,10 +586,8 @@ public class RunnerGameView extends View {
         paint.setColor(Color.parseColor("#afc1b7"));
         canvas.drawText("Обери героя й починай тренування.", KonohaTheme.dp(getContext(), 24), footY, paint);
 
-        drawPillButton(canvas, w - KonohaTheme.dp(getContext(), 190), footY - KonohaTheme.dp(getContext(), 16),
-                KonohaTheme.dp(getContext(), 80), KonohaTheme.dp(getContext(), 24), "↓ Підкат");
-        drawPillButton(canvas, w - KonohaTheme.dp(getContext(), 100), footY - KonohaTheme.dp(getContext(), 16),
-                KonohaTheme.dp(getContext(), 80), KonohaTheme.dp(getContext(), 24), "↑ Стрибок");
+        drawPillButton(canvas, slideButton.left, slideButton.top, slideButton.width(), slideButton.height(), "↓ Підкат");
+        drawPillButton(canvas, jumpButton.left, jumpButton.top, jumpButton.width(), jumpButton.height(), "↑ Стрибок");
     }
 
     private void renderGameContent(Canvas canvas) {

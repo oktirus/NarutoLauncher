@@ -13,6 +13,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.*;
 
 import ua.konoha.tv.nativepreview.apps.AppManager;
@@ -20,6 +21,7 @@ import ua.konoha.tv.nativepreview.model.AppItem;
 import ua.konoha.tv.nativepreview.theme.KonohaTheme;
 import ua.konoha.tv.nativepreview.views.DockView;
 import ua.konoha.tv.nativepreview.views.TechniqueRenderer;
+import ua.konoha.tv.nativepreview.views.ChakraFocusView;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -50,6 +52,11 @@ public class LibraryPanel extends FrameLayout {
     private final Button filterButton;
     private final Button orderButton;
     private final GridLayout grid;
+    private final ChakraFocusView focusView;
+    private boolean observingFocus;
+    private final ViewTreeObserver.OnGlobalFocusChangeListener focusListener =
+            (oldFocus, newFocus) -> updateAuraTarget(newFocus);
+    private final ViewTreeObserver.OnScrollChangedListener scrollListener = this::invalidateAura;
 
     private int computedColumnCount = 4;
     private int computedCardWidth = 0;
@@ -149,7 +156,14 @@ public class LibraryPanel extends FrameLayout {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
         ));
 
-        sheetContainer.setBodyView(scrollView);
+        // Ordinary techniques sit behind the cards; Gamabunta is above them.
+        FrameLayout body = new FrameLayout(context);
+        focusView = new ChakraFocusView(context, techniqueRenderer);
+        body.addView(focusView, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+        scrollView.setElevation(10f);
+        body.addView(scrollView, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+        body.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> invalidateAura());
+        sheetContainer.setBodyView(body);
         addView(sheetContainer, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
     }
 
@@ -165,15 +179,48 @@ public class LibraryPanel extends FrameLayout {
         release();
     }
 
-    public void pause() {}
+    public void pause() { focusView.pause(); }
 
     public void resume() {
+        focusView.resume();
         renderGrid();
     }
 
-    public void setTechnique(String technique) {}
+    public void setTechnique(String technique) { focusView.setTechnique(technique); }
 
-    public void setMotionEnabled(boolean enabled) {}
+    public void setMotionEnabled(boolean enabled) { focusView.setMotionEnabled(enabled); }
+
+    private void updateAuraTarget(View focused) {
+        View card = focused;
+        while (card != null && card.getParent() != grid) {
+            card = card.getParent() instanceof View ? (View) card.getParent() : null;
+        }
+        focusView.setTargetView(card);
+    }
+
+    private void invalidateAura() { focusView.invalidate(); }
+
+    @Override protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        if (!observingFocus) {
+            getViewTreeObserver().addOnGlobalFocusChangeListener(focusListener);
+            getViewTreeObserver().addOnScrollChangedListener(scrollListener);
+            observingFocus = true;
+        }
+    }
+
+    private void stopObservingFocus() {
+        if (observingFocus && getViewTreeObserver().isAlive()) {
+            getViewTreeObserver().removeOnGlobalFocusChangeListener(focusListener);
+            getViewTreeObserver().removeOnScrollChangedListener(scrollListener);
+        }
+        observingFocus = false;
+    }
+
+    @Override protected void onDetachedFromWindow() {
+        stopObservingFocus();
+        super.onDetachedFromWindow();
+    }
 
     public void renderGrid() {
         renderApps();
@@ -264,6 +311,10 @@ public class LibraryPanel extends FrameLayout {
     }
 
     public void renderApps() {
+        View focusedCard = grid.getFocusedChild();
+        String focusedPackage = focusedCard != null ? (String) focusedCard.getTag() : null;
+        boolean pinFocused = focusedCard != null && focusedCard.findFocus() != focusedCard;
+        focusView.setTargetView(null);
         grid.removeAllViews();
         String query = searchInput.getText().toString().trim().toLowerCase(new Locale("uk", "UA"));
 
@@ -297,12 +348,23 @@ public class LibraryPanel extends FrameLayout {
             empty.setPadding(0, KonohaTheme.dp(getContext(), 40), 0, 0);
             empty.setGravity(Gravity.CENTER);
             grid.addView(empty);
+            if (focusedPackage != null) sheetContainer.getCloseButton().requestFocus();
             return;
         }
 
         for (AppItem app : filtered) {
             View card = createLibraryCard(app);
             grid.addView(card);
+        }
+        if (focusedPackage != null) {
+            View replacement = findCardByPackage(focusedPackage);
+            if (replacement != null) {
+                View target = pinFocused ? replacement.findViewById(android.R.id.button1) : replacement;
+                target.requestFocus();
+                updateAuraTarget(target);
+            } else {
+                sheetContainer.getCloseButton().requestFocus();
+            }
         }
     }
 
@@ -368,6 +430,9 @@ public class LibraryPanel extends FrameLayout {
         pinBtn.setTypeface(KonohaTheme.getNunito(getContext()));
         pinBtn.setPadding(0, KonohaTheme.dp(getContext(), 6), 0, 0);
         pinBtn.setClickable(true);
+        pinBtn.setId(android.R.id.button1);
+        pinBtn.setFocusable(true);
+        pinBtn.setFocusableInTouchMode(true);
         pinBtn.setOnClickListener(v -> {
             appManager.togglePin(app.getPackageName());
             if (dockView != null) dockView.render();
@@ -394,7 +459,7 @@ public class LibraryPanel extends FrameLayout {
             v.setScaleX(hasFocus ? 1.05f : 1.0f);
             v.setScaleY(hasFocus ? 1.05f : 1.0f);
             GradientDrawable d = new GradientDrawable();
-            d.setColor(hasFocus ? Color.parseColor("#153340") : Color.TRANSPARENT);
+            d.setColor(hasFocus ? Color.parseColor("#14153340") : Color.TRANSPARENT);
             d.setCornerRadius(KonohaTheme.dp(getContext(), 4));
             d.setStroke(KonohaTheme.dp(getContext(), hasFocus ? 2 : 0),
                     hasFocus ? KonohaTheme.COLOR_GOLD : Color.TRANSPARENT);
@@ -430,6 +495,10 @@ public class LibraryPanel extends FrameLayout {
     }
 
     public void release() {
+        stopObservingFocus();
+        focusView.pause();
+        focusView.setTargetView(null);
+        grid.removeAllViews();
         for (Bitmap bmp : iconCache.values()) {
             if (bmp != null && !bmp.isRecycled()) bmp.recycle();
         }

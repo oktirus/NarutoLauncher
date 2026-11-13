@@ -16,6 +16,8 @@ import java.util.List;
  */
 public class ChakraFocusView extends View {
     private final TechniqueRenderer renderer;
+    // Share decoded images, never another overlay's clock or coordinate state.
+    private final TechniqueRenderer.FrogState frogState = new TechniqueRenderer.FrogState();
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     private String currentTechnique = "rasengan";
@@ -62,13 +64,9 @@ public class ChakraFocusView extends View {
     private final Runnable animationRunnable = new Runnable() {
         @Override
         public void run() {
-            if (isDisposed || isActivityPaused) return;
-            if (isAttachedToWindow() && getVisibility() == VISIBLE) {
-                invalidate();
-            }
-            if (!isActivityPaused && isAttachedToWindow()) {
-                postDelayed(this, 16);
-            }
+            if (!canRenderFrames() || !needsAnimation()) return;
+            invalidate();
+            postOnAnimation(this);
         }
     };
 
@@ -107,32 +105,49 @@ public class ChakraFocusView extends View {
 
     private void startAnimationLoop() {
         removeCallbacks(animationRunnable);
-        if (!isActivityPaused && isAttachedToWindow()) {
-            post(animationRunnable);
-        }
+        if (canRenderFrames() && needsAnimation()) postOnAnimation(animationRunnable);
+    }
+
+    private boolean canRenderFrames() {
+        return !isDisposed && !isActivityPaused && isAttachedToWindow()
+                && getWindowVisibility() == VISIBLE && isShown();
+    }
+
+    private boolean hasVisibleTarget() {
+        return targetView != null && targetView.isAttachedToWindow() && targetView.isShown();
+    }
+
+    private boolean needsAnimation() {
+        return isMotionEnabled && (hasVisibleTarget() || currentAlpha > 0.02f || !activeTrails.isEmpty());
     }
 
     public void setTechnique(String technique) {
         this.currentTechnique = technique != null ? technique : "rasengan";
         setElevation("gamabunta".equals(this.currentTechnique) ? 20f : 5f);
+        startAnimationLoop();
         invalidate();
     }
 
     public void setMotionEnabled(boolean enabled) {
         this.isMotionEnabled = enabled;
+        if (!enabled) {
+            activeTrails.clear();
+            burstLife = 0f;
+        }
         startAnimationLoop();
+        invalidate();
     }
 
     public void triggerBurst() {
-        this.burstLife = 1.0f;
+        this.burstLife = isMotionEnabled ? 1.0f : 0f;
+        startAnimationLoop();
         invalidate();
     }
 
     public void setTargetView(View view) {
         if (this.targetView == view) return;
-        View old = this.targetView;
         this.targetView = view;
-        this.burstLife = 1.0f;
+        this.burstLife = isMotionEnabled && view != null ? 1.0f : 0f;
 
         if (view != null) {
             View emblem = findEmblemView(view);
@@ -174,9 +189,9 @@ public class ChakraFocusView extends View {
                 float toX = newTargetX;
                 float toY = newTargetY;
 
-                if (lastDockX > 0 && Math.abs(toX - fromX) > 10f) {
+                if (isMotionEnabled && lastDockX > 0 && Math.abs(toX - fromX) > 10f) {
                     long now = android.os.SystemClock.uptimeMillis() - animationStartTime;
-                    renderer.triggerGamabuntaJump(new PointF(fromX, fromY), new PointF(toX, toY), toX >= fromX ? 1 : -1, now);
+                    renderer.triggerGamabuntaJump(frogState, new PointF(fromX, fromY), new PointF(toX, toY), toX >= fromX ? 1 : -1, now);
                 }
                 lastDockX = toX;
                 lastDockY = toY;
@@ -263,7 +278,7 @@ public class ChakraFocusView extends View {
         if (animationStartTime == 0) {
             animationStartTime = uptime;
         }
-        long now = uptime - animationStartTime;
+        long now = isMotionEnabled ? uptime - animationStartTime : 0;
         float dt = lastFrameTime > 0 ? (uptime - lastFrameTime) / 1000f : 0.016f;
         if (dt > 0.05f) dt = 0.05f;
         lastFrameTime = uptime;
@@ -286,7 +301,7 @@ public class ChakraFocusView extends View {
             }
         }
 
-        if (targetView != null && targetView.isAttachedToWindow() && targetView.getVisibility() == VISIBLE) {
+        if (hasVisibleTarget()) {
             View emblem = findEmblemView(targetView);
             if (emblem.getWidth() > 0 && emblem.getHeight() > 0) {
                 emblem.getLocationInWindow(targetLocation);
@@ -316,11 +331,13 @@ public class ChakraFocusView extends View {
                 currentR = targetR;
             }
 
-            float targetAlphaVal = (targetView != null && targetView.isAttachedToWindow()) ? 1.0f : 0.0f;
-            currentAlpha += (targetAlphaVal - currentAlpha) * 0.25f;
+            float targetAlphaVal = hasVisibleTarget() ? 1.0f : 0.0f;
+            if (isMotionEnabled) currentAlpha += (targetAlphaVal - currentAlpha) * 0.25f;
+            else currentAlpha = targetAlphaVal;
 
             if (currentAlpha > 0.02f && renderer != null) {
-                renderer.drawTechnique(canvas, currentTechnique, currentCx, currentCy, currentR, now, burstLife, !isMotionEnabled);
+                renderer.drawTechnique(canvas, currentTechnique, currentCx, currentCy, currentR,
+                        now, burstLife, !isMotionEnabled, frogState);
             }
         }
     }

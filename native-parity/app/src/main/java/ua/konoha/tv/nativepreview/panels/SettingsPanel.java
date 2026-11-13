@@ -3,6 +3,7 @@ package ua.konoha.tv.nativepreview.panels;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.StateListDrawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -100,22 +101,27 @@ public class SettingsPanel extends FrameLayout {
         content.addView(createSpinnerRow("Звук виділення", "Один спільний звук фокусу для всіх застосунків.", soundSpinner));
 
         // 3. Motion Switch
+        motionSwitch = new KonohaSwitch(context);
         content.addView(createSwitchRow("Живий світ", "Листя, паралакс, сліди чакри та рухомі печатки.",
-                prefs.isMotionEnabled(), (sw, checked) -> {
+                motionSwitch, prefs.isMotionEnabled(), (sw, checked) -> {
                     prefs.setMotionEnabled(checked);
                     audioController.playUiSound();
                 }));
 
         // 4. Audio Effects Switch
+        audioSwitch = new KonohaSwitch(context);
         content.addView(createSwitchRow("Звуки технік", "Чакра, блискавка та печатки з аніме.",
-                prefs.isAudioEnabled(), (sw, checked) -> {
+                audioSwitch, prefs.isAudioEnabled(), (sw, checked) -> {
                     prefs.setAudioEnabled(checked);
+                    if (!checked) audioController.stopTechniquePreview();
+                    audioController.updateMusic();
                     audioController.playUiSound();
                 }));
 
         // 5. Music Switch
+        musicSwitch = new KonohaSwitch(context);
         content.addView(createSwitchRow("Музика Naruto", "Офіційні прев’ю OST замість синтезованого фону.",
-                prefs.isAmbienceEnabled(), (sw, checked) -> {
+                musicSwitch, prefs.isAmbienceEnabled(), (sw, checked) -> {
                     prefs.setAmbienceEnabled(checked);
                     audioController.updateMusic();
                 }));
@@ -145,9 +151,14 @@ public class SettingsPanel extends FrameLayout {
         content.addView(musicVolRow);
 
         // 9. Audio preview buttons
-        content.addView(createActionButton("Прослухати звук виділення", v -> audioController.playFocusSound()));
+        content.addView(createActionButton("Прослухати звук виділення", v -> {
+            audioSwitch.setChecked(true);
+            audioController.stopTechniquePreview();
+            audioController.playFocusSound();
+        }));
         content.addView(createActionButton("Використати: " + getTechniqueName(prefs.getTechnique()), v -> {
-            audioController.playUiSound();
+            audioSwitch.setChecked(true);
+            audioController.playTechniquePreview(prefs.getTechnique());
         }));
 
         // 10. Rotation & Idle Spinners
@@ -208,7 +219,8 @@ public class SettingsPanel extends FrameLayout {
         return row;
     }
 
-    private View createSwitchRow(String title, String subtitle, boolean initial, KonohaSwitch.OnCheckedChangeListener changeListener) {
+    private View createSwitchRow(String title, String subtitle, KonohaSwitch sw, boolean initial,
+            KonohaSwitch.OnCheckedChangeListener changeListener) {
         LinearLayout row = new LinearLayout(getContext());
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
@@ -233,10 +245,10 @@ public class SettingsPanel extends FrameLayout {
 
         row.addView(textCol, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
 
-        KonohaSwitch sw = new KonohaSwitch(getContext());
         sw.setChecked(initial);
         sw.setOnCheckedChangeListener(changeListener);
         row.addView(sw);
+        highlightControlRow(row, sw);
 
         return row;
     }
@@ -287,6 +299,7 @@ public class SettingsPanel extends FrameLayout {
         volumeControl.addView(valView);
 
         row.addView(volumeControl);
+        highlightControlRow(row, sb);
         return row;
     }
 
@@ -401,17 +414,17 @@ public class SettingsPanel extends FrameLayout {
 
         row.addView(textCol, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
         row.addView(spinner);
+        highlightControlRow(row, spinner);
 
         return row;
     }
 
     private Spinner createStyledSpinner(Context context) {
-        Spinner spinner = new Spinner(context);
-        GradientDrawable gd = new GradientDrawable();
-        gd.setColor(Color.parseColor("#082330"));
-        gd.setCornerRadius(KonohaTheme.dp(context, 3));
-        gd.setStroke(KonohaTheme.dp(context, 1), Color.parseColor("#889e875b"));
-        spinner.setBackground(gd);
+        Spinner spinner = new Spinner(context, Spinner.MODE_DROPDOWN);
+        spinner.setFocusable(true);
+        spinner.setFocusableInTouchMode(true);
+        spinner.setBackground(focusBackground(Color.parseColor("#082330"), Color.parseColor("#889e875b")));
+        spinner.setPopupBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.parseColor("#082330")));
 
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 KonohaTheme.dp(context, 190), KonohaTheme.dp(context, 38)
@@ -445,13 +458,55 @@ public class SettingsPanel extends FrameLayout {
                     tv.setTextColor(KonohaTheme.COLOR_PAPER);
                     tv.setTextSize(12);
                     tv.setTypeface(KonohaTheme.getNunito(getContext()));
-                    tv.setBackgroundColor(Color.parseColor("#082330"));
+                    // ListView activates the committed value separately from its D-pad selection.
+                    tv.setBackground(stateBackground(Color.parseColor("#082330"), Color.TRANSPARENT,
+                            new int[]{android.R.attr.state_focused, android.R.attr.state_selected,
+                                    android.R.attr.state_pressed}));
+                    tv.setSingleLine(false);
+                    tv.setMinHeight(KonohaTheme.dp(getContext(), 44));
                     tv.setPadding(KonohaTheme.dp(getContext(), 12), KonohaTheme.dp(getContext(), 10),
                             KonohaTheme.dp(getContext(), 12), KonohaTheme.dp(getContext(), 10));
                 }
                 return v;
             }
         };
+    }
+
+    private void highlightControlRow(ViewGroup row, View control) {
+        int inset = KonohaTheme.dp(getContext(), 10);
+        row.setPadding(inset, row.getPaddingTop(), inset, row.getPaddingBottom());
+        row.setBackground(focusBackground(Color.TRANSPARENT, Color.TRANSPARENT));
+        control.setOnFocusChangeListener((view, focused) -> {
+            row.setActivated(focused);
+            view.invalidate();
+            if (focused && row.getWidth() > 0 && row.getHeight() > 0) {
+                row.requestRectangleOnScreen(new android.graphics.Rect(0, 0, row.getWidth(), row.getHeight()), true);
+            }
+        });
+    }
+
+    private StateListDrawable focusBackground(int normalColor, int normalBorderColor) {
+        return stateBackground(normalColor, normalBorderColor,
+                new int[]{android.R.attr.state_focused, android.R.attr.state_selected,
+                        android.R.attr.state_activated, android.R.attr.state_pressed});
+    }
+
+    private StateListDrawable stateBackground(int normalColor, int normalBorderColor, int[] highlightedStates) {
+        StateListDrawable states = new StateListDrawable();
+        for (int state : highlightedStates) {
+            states.addState(new int[]{state}, controlBackground(Color.parseColor("#2a424e"),
+                    KonohaTheme.COLOR_ORANGE, 2));
+        }
+        states.addState(new int[]{}, controlBackground(normalColor, normalBorderColor, 1));
+        return states;
+    }
+
+    private GradientDrawable controlBackground(int fill, int stroke, int widthDp) {
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(fill);
+        background.setCornerRadius(KonohaTheme.dp(getContext(), 4));
+        background.setStroke(KonohaTheme.dp(getContext(), widthDp), stroke);
+        return background;
     }
 
     private void setupHighlightSoundSpinner(Spinner spinner) {

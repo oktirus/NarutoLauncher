@@ -2,6 +2,7 @@ package ua.konoha.tv.nativepreview;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -35,6 +36,7 @@ public class MainActivity extends Activity {
     private TechniqueRenderer techniqueRenderer;
 
     private FrameLayout rootLayout;
+    private LinearLayout mainShell;
     private VillageBackgroundView backgroundView;
     private ChakraFocusView chakraFocusView;
     private DockView dockView;
@@ -147,7 +149,7 @@ public class MainActivity extends Activity {
         ));
 
         // Головна оболонка
-        LinearLayout mainShell = new LinearLayout(this);
+        mainShell = new LinearLayout(this);
         mainShell.setOrientation(LinearLayout.VERTICAL);
         mainShell.setPadding(dp(40), dp(20), dp(40), dp(8));
 
@@ -304,22 +306,29 @@ public class MainActivity extends Activity {
         hero.setGravity(Gravity.CENTER_VERTICAL);
         hero.setPadding(0, 0, 0, 0);
 
+        // Keep the caption and selector at their natural height on shorter TV viewports.
+        LinearLayout copy = new LinearLayout(this);
+        copy.setOrientation(LinearLayout.VERTICAL);
+        hero.addView(copy, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
         heroTitleView = new HeroTitleView(this);
-        hero.addView(heroTitleView);
+        copy.addView(heroTitleView, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
         heroDescView = new TextView(this);
         heroDescView.setTextColor(Color.parseColor("#d9d7bf"));
         heroDescView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         heroDescView.setTypeface(KonohaTheme.getNunito(this));
         heroDescView.setPadding(0, dp(4), 0, 0);
-        hero.addView(heroDescView);
+        copy.addView(heroDescView);
 
         quoteAuthorView = new TextView(this);
         quoteAuthorView.setTextColor(Color.parseColor("#b9cac1"));
         quoteAuthorView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         quoteAuthorView.setTypeface(KonohaTheme.getNunitoBold(this));
         quoteAuthorView.setPadding(0, dp(2), 0, dp(10));
-        hero.addView(quoteAuthorView);
+        copy.addView(quoteAuthorView);
 
         sceneChoiceBtn = new OutlinedGlyphButton(this);
         sceneChoiceBtn.setPill(true);
@@ -329,7 +338,7 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
         );
         sceneChoiceBtn.setLayoutParams(scLp);
-        hero.addView(sceneChoiceBtn);
+        copy.addView(sceneChoiceBtn);
 
         return hero;
     }
@@ -543,6 +552,7 @@ public class MainActivity extends Activity {
         if (activePanel == null) rememberHomeFocus();
         closeActivePanel();
         activePanel = panel;
+        mainShell.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
         backgroundView.setDecorPaused(true);
         chakraFocusView.setTargetView(null);
         modalContainer.removeAllViews();
@@ -573,6 +583,7 @@ public class MainActivity extends Activity {
     }
 
     private void restoreHomeFocus() {
+        if (!activityResumed || activePanel != null || ambientOverlay.getVisibility() == View.VISIBLE) return;
         View target = null;
         if (lastFocusedIsLibrary) {
             target = dockView.getArchiveCard();
@@ -593,6 +604,8 @@ public class MainActivity extends Activity {
             target.requestFocus();
             final View fTarget = target;
             fTarget.post(() -> {
+                if (!activityResumed || activePanel != null || ambientOverlay.getVisibility() == View.VISIBLE
+                        || !fTarget.isAttachedToWindow()) return;
                 fTarget.requestFocusFromTouch();
                 if (fTarget.requestFocus()) {
                     chakraFocusView.setTargetView(isInside(fTarget, dockView) ? fTarget : null);
@@ -624,6 +637,7 @@ public class MainActivity extends Activity {
             modalContainer.removeAllViews();
             modalContainer.setVisibility(View.GONE);
             activePanel = null;
+            mainShell.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
             techniqueRenderer.trimMemory(TechniqueRenderer.platesFor(prefs.getTechnique()));
             backgroundView.setDecorPaused(false);
             backgroundView.setMotionEnabled(prefs.isMotionEnabled());
@@ -631,6 +645,7 @@ public class MainActivity extends Activity {
             chakraFocusView.setTechnique(prefs.getTechnique());
             setupTimers();
             resetIdleTimer();
+            wireSpatialNavigation();
             restoreHomeFocus();
         }
     }
@@ -773,12 +788,16 @@ public class MainActivity extends Activity {
         closeActivePanel();
         chakraFocusView.setTargetView(null);
         ambientOverlay.start();
+        mainShell.setVisibility(View.INVISIBLE);
+        mainShell.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
         backgroundView.setDecorPaused(true);
         audioController.playUiSound();
     }
 
     private void exitAmbient() {
         ambientOverlay.stop();
+        mainShell.setVisibility(View.VISIBLE);
+        mainShell.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
         backgroundView.setDecorPaused(false);
         resetIdleTimer();
         restoreHomeFocus();
@@ -861,16 +880,34 @@ public class MainActivity extends Activity {
 
             // Відкриття налаштувань по Menu
             if (keyCode == KeyEvent.KEYCODE_MENU) {
+                if (ambientOverlay.getVisibility() == View.VISIBLE) {
+                    exitAmbient();
+                    return true;
+                }
                 if (activePanel instanceof RunnerGameView) {
                     return runnerGameView.onKeyDown(keyCode, event);
                 }
-                if (activePanel == settingsPanel) closeActivePanel();
+                if (settingsPanel != null && activePanel == settingsPanel) closeActivePanel();
                 else openSettings();
                 return true;
             }
         }
 
         return super.dispatchKeyEvent(event);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (Intent.ACTION_MAIN.equals(intent.getAction()) && intent.hasCategory(Intent.CATEGORY_HOME)) {
+            audioController.cancelPendingLaunch();
+            audioController.stopTechniquePreview();
+            toastOverlay.hide();
+            if (ambientOverlay.getVisibility() == View.VISIBLE) exitAmbient();
+            closeActivePanel();
+            restoreHomeFocus();
+        }
     }
 
     @Override

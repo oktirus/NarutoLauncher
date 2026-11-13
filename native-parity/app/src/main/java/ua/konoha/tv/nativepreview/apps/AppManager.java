@@ -133,25 +133,23 @@ public class AppManager {
             List<AppItem> sortedList, OnAppsReloadedListener listener) {
         if (disposed || gen != reloadGeneration) return;
         List<String> pins = prefsManager.getPins();
+        if (pins != null) {
+            List<String> repaired = new ArrayList<>(pins);
+            // Earlier builds persisted demo defaults even when real apps were installed.
+            // Preserve real (including temporarily unavailable) packages and explicit [].
+            if (repaired.removeIf(pkg -> pkg.startsWith("preview.") && !newAppsMap.containsKey(pkg))) {
+                pins = repaired.isEmpty() ? null : repaired;
+                if (pins != null) prefsManager.setPins(pins);
+            }
+        }
         if (pins == null) {
             pins = new ArrayList<>();
             String[] preferredKinds = {"smarttube", "lampa", "uakino", "netflix", "kodi", "spotify"};
             for (String prefKind : preferredKinds) {
-                boolean found = false;
                 for (AppItem app : newAppsMap.values()) {
                     if (prefKind.equals(app.getKind()) && !pins.contains(app.getPackageName())) {
                         pins.add(app.getPackageName());
-                        found = true;
                         break;
-                    }
-                }
-                if (!found) {
-                    for (CatalogData.AppDefinition def : CatalogData.KNOWN_APPS) {
-                        if (prefKind.equals(def.kind) && !pins.contains(def.pkg)) {
-                            newAppsMap.put(def.pkg, new AppItem(def.pkg, def.name, def.kind, def.description, null));
-                            pins.add(def.pkg);
-                            break;
-                        }
                     }
                 }
                 if (pins.size() >= 6) break;
@@ -242,11 +240,17 @@ public class AppManager {
         if (pins == null) return false;
         pins = new ArrayList<>(pins);
 
-        int index = pins.indexOf(packageName);
+        List<AppItem> visible = getPinnedApps();
+        int index = -1;
+        for (int i = 0; i < visible.size(); i++) {
+            if (packageName.equals(visible.get(i).getPackageName())) { index = i; break; }
+        }
         int target = index + direction;
-        if (index < 0 || target < 0 || target >= pins.size()) return false;
+        if (index < 0 || target < 0 || target >= visible.size()) return false;
 
-        Collections.swap(pins, index, target);
+        // Keep unavailable packages, but move relative to the neighbor the user sees.
+        Collections.swap(pins, pins.indexOf(packageName),
+                pins.indexOf(visible.get(target).getPackageName()));
         prefsManager.setPins(pins);
         return true;
     }

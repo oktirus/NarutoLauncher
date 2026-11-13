@@ -43,6 +43,9 @@ public class AudioController {
     private Runnable loopScheduleRunnable = null;
 
     private MediaPlayer confirmPlayer;
+    private MediaPlayer previewPlayer;
+    private Runnable previewTimeout;
+    private long previewGeneration;
     private Runnable pendingLaunchRunnable;
     private Runnable failsafeRunnable;
     private boolean isLaunching = false;
@@ -472,6 +475,7 @@ public class AudioController {
     }
 
     public synchronized void pauseMusic() {
+        stopTechniquePreview();
         isMusicPaused = true;
         if (loopScheduleRunnable != null) {
             mainHandler.removeCallbacks(loopScheduleRunnable);
@@ -560,8 +564,73 @@ public class AudioController {
 
     // --- Підсистема реплік технік запуску (Confirm Cues) ---
 
+    private String confirmCueAsset(String techniqueId) {
+        return "sharingan".equals(techniqueId) ? "audio/v5-sharingan-focus.wav"
+                : "audio/v5-" + techniqueId + "-confirm.wav";
+    }
+
+    /** Play a full cue without blocking or scheduling an application launch. */
+    public synchronized boolean playTechniquePreview(String techniqueId) {
+        stopTechniquePreview();
+        if (disposed || !prefs.isAudioEnabled() || isLaunching || isMusicPaused) return false;
+        final long generation = previewGeneration;
+        try (AssetFileDescriptor afd = context.getAssets().openFd(confirmCueAsset(techniqueId))) {
+            MediaPlayer player = new MediaPlayer();
+            ownedPlayers.add(player);
+            previewPlayer = player;
+            player.setAudioAttributes(new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
+            player.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+            player.setVolume(prefs.getVolume(), prefs.getVolume());
+            player.setOnPreparedListener(mp -> {
+                synchronized (AudioController.this) {
+                    if (generation != previewGeneration || mp != previewPlayer || disposed) return;
+                    try {
+                        if (prefs.isAudioEnabled()) mp.start();
+                        else stopTechniquePreview();
+                    } catch (IllegalStateException error) {
+                        stopTechniquePreview();
+                    }
+                }
+            });
+            player.setOnCompletionListener(mp -> {
+                synchronized (AudioController.this) {
+                    if (mp == previewPlayer) stopTechniquePreview();
+                }
+            });
+            player.setOnErrorListener((mp, what, extra) -> {
+                synchronized (AudioController.this) {
+                    if (mp == previewPlayer) stopTechniquePreview();
+                }
+                return true;
+            });
+            previewTimeout = () -> {
+                synchronized (AudioController.this) {
+                    if (generation == previewGeneration) stopTechniquePreview();
+                }
+            };
+            mainHandler.postDelayed(previewTimeout, 8000);
+            player.prepareAsync();
+            return true;
+        } catch (IOException | IllegalStateException error) {
+            android.util.Log.w("KonohaAudio", "Technique preview could not be played", error);
+            stopTechniquePreview();
+            return false;
+        }
+    }
+
+    public synchronized void stopTechniquePreview() {
+        previewGeneration++;
+        if (previewTimeout != null) mainHandler.removeCallbacks(previewTimeout);
+        previewTimeout = null;
+        safeReleasePlayer(previewPlayer);
+        previewPlayer = null;
+    }
+
     public synchronized boolean launchWithTechnique(String techniqueId, Runnable onLaunch) {
         if (disposed || isLaunching) return false; // Захист від повторного OK
+        stopTechniquePreview();
 
         if (!prefs.isAudioEnabled()) {
             onLaunch.run();
@@ -576,12 +645,7 @@ public class AudioController {
 
         final long currentLaunchGen = ++launchGeneration;
 
-        String cueAsset;
-        if ("sharingan".equals(techniqueId)) {
-            cueAsset = "audio/v5-sharingan-focus.wav";
-        } else {
-            cueAsset = "audio/v5-" + techniqueId + "-confirm.wav";
-        }
+        String cueAsset = confirmCueAsset(techniqueId);
 
         // Failsafe таймер на 8 секунд активний на весь час підготовки та відтворення
         failsafeRunnable = () -> {
@@ -693,6 +757,7 @@ public class AudioController {
 
     public synchronized void release() {
         disposed = true;
+        stopTechniquePreview();
         stopMusic();
         cancelPendingLaunch();
         if (soundPool != null) {

@@ -137,7 +137,7 @@ public class DockView extends HorizontalScrollView {
 
         if (toFocus != null) {
             toFocus.requestFocus();
-        } else if (container.getChildCount() > 0) {
+        } else if (focusedChild != null && container.getChildCount() > 0) {
             container.getChildAt(0).requestFocus();
         }
     }
