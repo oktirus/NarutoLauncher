@@ -4,7 +4,7 @@ import json,re,shutil,hashlib,sys
 ROOT=Path(__file__).resolve().parents[1];destination=Path(sys.argv[1]).resolve()
 assert destination.name=='site' and not destination.exists(), 'Use a new staging site directory'
 files=set((ROOT/'prototype').glob('*'))
-files={p for p in files if p.is_file()}
+files={p for p in files if p.is_file() and p.suffix.lower() in {'.html','.js','.css','.json','.svg','.png','.jpg','.webp','.ttf','.woff2'}}
 scenes=json.loads((ROOT/'prototype/scenes.js').read_text(encoding='utf8').split('window.KonohaScenes=')[1].strip().rstrip(';'))
 files.update(ROOT/'assets/runtime'/s['image'].split('?')[0] for s in scenes)
 for p in list(files):
@@ -20,5 +20,5 @@ for p in sorted(files):
  relative=p.relative_to(ROOT);target=destination/relative;target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(p,target)
  rows.append(dict(file=relative.as_posix(),bytes=p.stat().st_size,sha256=hashlib.sha256(p.read_bytes()).hexdigest()))
 assert not any('scene-night' in r['file'] for r in rows),'Retired wallpaper must not be bundled'
-out=ROOT/'releases/bundled-assets.json';out.write_text(json.dumps(rows,indent=2),encoding='utf8')
+out=ROOT/'releases/bundled-assets.json';out.parent.mkdir(parents=True,exist_ok=True);out.write_text(json.dumps(rows,indent=2),encoding='utf8')
 print(f'Bundled {len(rows)} files, {sum(r["bytes"] for r in rows)/1048576:.1f} MiB; 18 active scenes, no retired training art')

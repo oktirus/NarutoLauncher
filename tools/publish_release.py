@@ -39,6 +39,11 @@ def apk_metadata(apk, sdk):
 
 def prepare(apk, notes_file, sdk):
     code, version = apk_metadata(apk, sdk)
+    gradle = (ROOT / 'native-parity/app/build.gradle').read_text(encoding='utf-8-sig')
+    declared_code = re.search(r'versionCode\s+(\d+)', gradle)
+    declared_name = re.search(r"versionName\s+'([^']+)'", gradle)
+    if not declared_code or not declared_name or code != int(declared_code[1]) or version != declared_name[1]:
+        raise ValueError('APK version differs from the current source configuration')
     if code <= 0 or not re.fullmatch(r'\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?', version):
         raise ValueError('Use a positive versionCode and a release versionName')
     size = apk.stat().st_size
@@ -58,6 +63,8 @@ def prepare(apk, notes_file, sdk):
 
 
 def publish(folder, metadata, notes_file):
+    if command(['git', '-C', ROOT, 'status', '--porcelain']).strip():
+        raise ValueError('Commit reviewed changes before publishing a release')
     repo = json.loads(command(['gh', 'repo', 'view', REPO, '--json', 'nameWithOwner,visibility']))
     if repo['nameWithOwner'].lower() != REPO.lower() or repo['visibility'] != 'PUBLIC':
         raise ValueError('Expected the approved public repository')
@@ -66,6 +73,10 @@ def publish(folder, metadata, notes_file):
     if exists.returncode == 0:
         raise ValueError('Release already exists; do not overwrite a distributed version')
     head = command(['git', '-C', ROOT, 'rev-parse', 'HEAD']).strip()
+    runs = json.loads(command(['gh', 'run', 'list', '--repo', REPO, '--commit', head,
+                               '--workflow', 'android.yml', '--limit', '1', '--json', 'status,conclusion']))
+    if not runs or runs[0]['status'] != 'completed' or runs[0]['conclusion'] != 'success':
+        raise ValueError('The current commit must pass its GitHub Android workflow before publication')
     command(['gh', 'release', 'create', tag, folder / metadata['apkName'], folder / 'update.json',
              '--repo', REPO, '--target', head, '--title', 'Naruto · Коноха ' + metadata['versionName'],
              '--notes-file', notes_file, '--draft'])

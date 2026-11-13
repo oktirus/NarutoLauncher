@@ -6,7 +6,9 @@
 
 Defaults: motion/audio/ambience=true; rotation=60; idle=900; rasengan, потім rasenshuriken. Explicit preferences зберігаються. HOME/cold open вибирає першу app card, звичайний resume — попередню. HOME setup пропонується один раз після першого видимого запуску і повторно доступний із Settings.
 
-Наступний кандидат 1.1.0/versionCode 2 додає GitHub Releases updater. До завершення актуального build/review та Release readback його не вважати прийнятим. Ціль репозиторію, погоджена користувачем: публічний `oktirus/NarutoLauncher`. Installer має просити згоду Android; private signing key не публікується.
+Поточна нативна 1.1.0/versionCode 2 додає GitHub Releases updater: локально 105 тестів, lint 0 Error/Fatal і 30 Warning. APK SHA-256 `463590560D2F1EE8849C8B5834EFD07E10BA1FBA79C70A57D017C4DC2A9869BC`. Публічний репозиторій `oktirus/NarutoLauncher` створено, історію перенесено. Installer просить згоду Android; private signing key не публікується. Реальний TV installer і новий RAM benchmark у цій задачі не перевірялися.
+
+Перший GitHub CI виявив відсутній sdkmanager у PATH runner; workflow тепер явно встановлює SDK 34 через pinned setup-android. Контрольний запуск c8b7169 пройшов. Перенесення виконано оборотно: старі 4104 файли перевірено за хешами в `local-backups/Network-before-split`, у Network залишені pointers. Private archives/rollback data не входять до публічного Git. Нативна збірка зі свіжого public index має ті самі 91 compiled Java classes і runtime assets; debug multidex packaging не є побітово відтворюваним, тому канал оновлень звіряє конкретний випущений APK за SHA-256.
 
 Lenovo зі старого контексту: 192.168.100.26:5555, LNVNB161216, Android 14. Це installation-specific історичний запис, перед доступом перевірити. Поточна міграція не дозволяє нове встановлення чи зміну HOME на TV.
 

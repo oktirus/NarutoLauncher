@@ -16,7 +16,7 @@
 python -X utf8 tools/publish_release.py --apk native-parity/releases/KonohaNative-1.1.0-debug.apk --notes-file docs/releases/1.1.0.md
 ```
 
-4. Після явного доручення на Release додати `--publish`. Скрипт звіряє сертифікат із `.release-certificate.sha256`, створює draft з APK/update.json, завантажує їх назад для перевірки й тільки потім публікує stable release. Наявний tag не перезаписується.
+4. Після явного доручення на Release додати `--publish`. Потрібні чистий committed working tree, успішний GitHub Android workflow для поточного commit і version metadata APK, що збігається з app/build.gradle. Скрипт звіряє сертифікат із `.release-certificate.sha256`, створює draft з APK/update.json, завантажує їх назад для перевірки й тільки потім публікує stable release. Наявний tag не перезаписується.
 
 `update.json`: schemaVersion=1, applicationId, integer versionCode, versionName, apkName, bytes, sha256, notes. APK має бути asset того самого release. У APK немає GitHub token. Власний keystore зберігати окремо й резервувати безпечно; зміна ключа порушує update-сумісність.
 
