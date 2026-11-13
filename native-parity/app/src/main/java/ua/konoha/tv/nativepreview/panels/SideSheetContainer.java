@@ -50,8 +50,8 @@ public class SideSheetContainer extends FrameLayout {
         setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
 
         scrimPaint.setColor(Color.parseColor("#99071c27")); // 60% dimming
-        goldRimPaint.setColor(Color.parseColor("#66f2c576"));
-        goldRimPaint.setStrokeWidth(KonohaTheme.dp(context, 1.5f));
+        goldRimPaint.setColor(Color.parseColor("#f2c576"));
+        goldRimPaint.setStrokeWidth(KonohaTheme.dp(context, 2f));
         goldRimPaint.setStyle(Paint.Style.STROKE);
 
         shadowPaint.setColor(Color.parseColor("#e6071c27"));
