@@ -15,3 +15,5 @@ Lenovo зі старого контексту: 192.168.100.26:5555, LNVNB161216,
 Історичний matched Home RAM 13.11: Chromium 280.39 MiB PSS, native 53.22 MiB, audio off, motion on, dusk/rasengan, 10 samples кожної версії. Це не бюджет для updater/music/game і не новий замір; повний звіт збережено в native-parity/reviews/lenovo-memory-20261113.md.
 
 Git history виділяється з Network без rewrite його source repo. Незакомічені HOME setup/defaults/updater зміни й попередні cleanup deletions мають бути збережені. Локальні private backups/архіви переносяться, але не публікуються.
+
+Перенесення завершено. Stable Release: https://github.com/oktirus/NarutoLauncher/releases/tag/v1.1.0. Production transport окремо перевірено проти публічного GitHub: latest metadata → APK download → SHA-256, PASS. Release/code commit `523df14930236c9c5fb655b2b833dd9bc68622a0`, його CI успішний. Пізніша зміна history/memory documentation не змінює цей APK або native source. Подальший build/release робити лише з нового кореня; старий Network/NarutoLauncher — README pointer.

@@ -26,3 +26,11 @@ versionCode=2, applicationId `ua.konoha.tv.nativeparity`. Settings → Онов�
 - Три canonical skills пройшли skill validator. Publisher dry-run перевірено; aapt metadata inspection працює через ASCII temp path, бо Windows aapt не відкриває кириличні шляхи надійно.
 
 GitHub publication/CI readback та остаточний cutover фіксуються в локальному `migration/` журналі після виконання. Жодного встановлення 1.1.0, зміни HOME або нового RAM/wake виміру на Lenovo в цій задачі не виконувалося. Попередня версія без updater потребує одноразового звичайного встановлення 1.1.0 поверх сумісного APK.
+
+## Підтвердження публікації
+
+Cutover завершено: 24 оборотні переміщення, 4104 rollback-файли повторно перевірено за SHA-256, у Network лишилися pointers. Публічний репозиторій [oktirus/NarutoLauncher](https://github.com/oktirus/NarutoLauncher) працює. Після явного provisioning SDK workflow успішно пройшов для code/release commit `523df14930236c9c5fb655b2b833dd9bc68622a0`: [CI run](https://github.com/oktirus/NarutoLauncher/actions/runs/43526253018).
+
+Опубліковано stable [v1.1.0](https://github.com/oktirus/NarutoLauncher/releases/tag/v1.1.0), assets — APK та update.json. Publisher перевірив downloaded readback до зняття draft. Додатковий JVM live-probe скомпілював незмінені production ReleaseUpdate/GitHubReleaseClient, отримав реальний GitHub latest release, завантажив 15621808 байтів і підтвердив SHA-256 конкретного APK. Це перевірка каналу/production transport, а не запуск Android installer на TV.
+
+Chromium-альтернатива також збирається зі свіжого експорту public index. Для standalone clone виправлено створення output/log directories без залежності від ignored revisions, а bundler не включає приватний prefs XML. Public source guard перевіряє поточний index та історію; keys/.dpapi/device archives і великі локальні ZIP не публікуються. Центральна пам'ять Codex переадресовується дозволеною extension note, без прямого переписування базового реєстру.
