@@ -3,6 +3,7 @@ package ua.konoha.tv.nativepreview.updates;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.pm.PackageInfo;
 import android.os.Looper;
 import org.junit.After;
 import org.junit.Before;
@@ -37,6 +38,11 @@ public class UpdateControllerTest {
 
     @Before public void setup() throws Exception {
         activity = Robolectric.buildActivity(Activity.class).setup().visible();
+        Activity installedApp = activity.get();
+        PackageInfo installed = installedApp.getPackageManager().getPackageInfo(installedApp.getPackageName(), 0);
+        installed.versionCode = 2;
+        installed.versionName = "1.1.0";
+        Shadows.shadowOf(installedApp.getPackageManager()).installPackage(installed);
         byte[] release = UpdateFixtures.release().toString().getBytes(StandardCharsets.UTF_8);
         byte[] manifest = UpdateFixtures.manifest().toString().getBytes(StandardCharsets.UTF_8);
         updates = new UpdateController(activity.get(), canPrompt::get, () -> {

@@ -33,6 +33,7 @@ import org.robolectric.annotation.LooperMode;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 
 import ua.konoha.tv.nativepreview.apps.AppManager;
@@ -203,19 +204,40 @@ public class NativeLifecycleTest {
     }
 
     @Test public void headerFocusRestoresWithoutDockAura() throws Exception {
-        MainActivity activity = start();
+        controller = Robolectric.buildActivity(MainActivity.class).create().start();
+        MainActivity activity = controller.get();
+        ExecutorService loader = field(field(activity, "appManager"), "executor");
+        CountDownLatch workerStarted = new CountDownLatch(1);
+        CountDownLatch allowReload = new CountDownLatch(1);
+        loader.submit(() -> {
+            workerStarted.countDown();
+            allowReload.await();
+            return null;
+        });
+
         View button = field(activity, "sceneChoiceBtn");
-        // Robolectric starts in touch mode; emulate a keyboard/D-pad focus request.
-        Object viewRoot = org.robolectric.util.ReflectionHelpers.callInstanceMethod(activity.getWindow().getDecorView(), "getViewRootImpl");
-        org.robolectric.util.ReflectionHelpers.callInstanceMethod(viewRoot,
-                "ensureTouchMode", org.robolectric.util.ReflectionHelpers.ClassParameter.from(boolean.class, false));
-        assertTrue("Header bounds=" + button.getWidth() + "x" + button.getHeight() + "; shown=" + button.isShown(), button.requestFocus());
-        assertSame("View tree focus follows header request", button,
-                ((View) field(activity, "rootLayout")).findFocus());
-        call(activity, "openScenes");
-        assertSame("Opening picker preserves the initiating header button", button, field(activity, "lastFocusedView"));
-        activity.closeActivePanel();
-        assertTrue("Closing picker restores header; actual=" + activity.getCurrentFocus(), button.hasFocus());
+        try {
+            assertTrue("Inventory worker is held before onResume", workerStarted.await(5, TimeUnit.SECONDS));
+            controller.resume().visible();
+            org.robolectric.Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(16));
+            View root = activity.getWindow().getDecorView();
+            root.measure(View.MeasureSpec.makeMeasureSpec(1366, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(768, View.MeasureSpec.EXACTLY));
+            root.layout(0, 0, 1366, 768);
+            assertTrue("The header is attached before sending input", button.isAttachedToWindow());
+            assertFalse((Boolean) field(activity, "appInventoryReady"));
+            assertTrue(button.requestFocusFromTouch());
+            assertSame(button, root.findFocus());
+            call(activity, "openScenes");
+            assertSame("Opening picker preserves the initiating header button", button, field(activity, "lastFocusedView"));
+            activity.closeActivePanel();
+            assertSame("Closing picker restores header while inventory is pending", button, root.findFocus());
+        } finally {
+            allowReload.countDown();
+        }
+        drain(loader);
+        assertSame("Publishing inventory keeps the user's restored focus",
+                button, activity.getWindow().getDecorView().findFocus());
         Object focus = field(activity, "chakraFocusView");
         assertNull(field(focus, "targetView"));
     }

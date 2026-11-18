@@ -565,7 +565,11 @@ public class MainActivity extends Activity {
     // Відкриття та закриття модальних панелей
     private void showPanel(View panel) {
         if (activePanel == panel) return;
-        if (activePanel == null) rememberHomeFocus();
+        if (activePanel == null) {
+            rememberHomeFocus();
+            // Opening a panel takes precedence over pending cold HOME focus.
+            focusFirstAppOnHomeEntry = false;
+        }
         closeActivePanel();
         activePanel = panel;
         mainShell.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
