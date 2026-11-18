@@ -58,7 +58,7 @@ public class OrderPanel extends FrameLayout {
 
         // Instruction
         TextView note = new TextView(context);
-        note.setText("Обери стрілку ↑ або ↓ біля застосунку та натисни OK. Перші шість позицій видно на головному екрані. Зміни зберігаються одразу.");
+        note.setText("Стрілки ↑ та ↓ змінюють позицію застосунку, а ✕ прибирає з обраного. Перші шість позицій видно на головному екрані. Зміни зберігаються одразу.");
         note.setTextColor(Color.parseColor("#afc1b7"));
         note.setTextSize(11);
         note.setTypeface(KonohaTheme.getNunito(context));
@@ -128,13 +128,25 @@ public class OrderPanel extends FrameLayout {
             listContainer.addView(row);
 
             if (app.getPackageName().equals(focusTargetPackage)) {
-                viewToFocus = focusTargetIsDown ? row.findViewById(R.id.order_down) : row.findViewById(R.id.order_up);
+                View preferred = focusTargetIsDown ? row.findViewById(R.id.order_down) : row.findViewById(R.id.order_up);
+                if (preferred != null && preferred.isFocusable()) {
+                    viewToFocus = preferred;
+                } else {
+                    View alternate = focusTargetIsDown ? row.findViewById(R.id.order_up) : row.findViewById(R.id.order_down);
+                    if (alternate != null && alternate.isFocusable()) {
+                        viewToFocus = alternate;
+                    } else {
+                        viewToFocus = row.findViewById(R.id.order_remove);
+                    }
+                }
             }
         }
 
         if (viewToFocus != null) {
             final View fView = viewToFocus;
             post(() -> fView.requestFocus());
+        } else if (favorites.isEmpty()) {
+            post(() -> sheetContainer.getCloseButton().requestFocus());
         }
         focusTargetPackage = null;
     }
@@ -215,6 +227,40 @@ public class OrderPanel extends FrameLayout {
         dLp.setMargins(KonohaTheme.dp(getContext(), 8), 0, 0, 0);
         downBtn.setLayoutParams(dLp);
         row.addView(downBtn);
+
+        // Remove from favorites button
+        FrameLayout removeBtn = createArrowButton(GlyphIconView.Glyph.CLOSE, false, () -> {
+            List<AppItem> favorites = appManager.getPinnedApps();
+            String nextFocusPkg = null;
+            if (favorites != null && favorites.size() > 1) {
+                int appIdx = -1;
+                for (int i = 0; i < favorites.size(); i++) {
+                    if (favorites.get(i).getPackageName().equals(app.getPackageName())) {
+                        appIdx = i;
+                        break;
+                    }
+                }
+                if (appIdx >= 0) {
+                    if (appIdx < favorites.size() - 1) {
+                        nextFocusPkg = favorites.get(appIdx + 1).getPackageName();
+                    } else if (appIdx > 0) {
+                        nextFocusPkg = favorites.get(appIdx - 1).getPackageName();
+                    }
+                }
+            }
+            focusTargetPackage = nextFocusPkg;
+            focusTargetIsDown = false;
+            appManager.togglePin(app.getPackageName());
+            if (dockView != null) dockView.render();
+            renderOrderList();
+        });
+        LinearLayout.LayoutParams rmLp = new LinearLayout.LayoutParams(
+                KonohaTheme.dp(getContext(), 36), KonohaTheme.dp(getContext(), 36)
+        );
+        rmLp.setMargins(KonohaTheme.dp(getContext(), 8), 0, 0, 0);
+        removeBtn.setLayoutParams(rmLp);
+        removeBtn.setId(R.id.order_remove);
+        row.addView(removeBtn);
 
         LinearLayout.LayoutParams rLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT

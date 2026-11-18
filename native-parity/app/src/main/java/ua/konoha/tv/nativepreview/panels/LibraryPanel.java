@@ -22,6 +22,7 @@ import ua.konoha.tv.nativepreview.theme.KonohaTheme;
 import ua.konoha.tv.nativepreview.views.DockView;
 import ua.konoha.tv.nativepreview.views.TechniqueRenderer;
 import ua.konoha.tv.nativepreview.views.ChakraFocusView;
+import ua.konoha.tv.nativepreview.views.TVKeyHelper;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ import java.util.Map;
 public class LibraryPanel extends FrameLayout {
     public interface OnLibraryActionListener {
         void onAppLaunch(AppItem app);
+        void onAppContextMenuRequested(View view, AppItem app);
         void onOrderPanelRequested();
         void onCloseRequested();
         void onAppFocused(View view, AppItem app);
@@ -143,6 +145,14 @@ public class LibraryPanel extends FrameLayout {
         toolbar.addView(orderButton);
 
         content.addView(toolbar);
+
+        TextView remoteHint = new TextView(context);
+        remoteHint.setText("OK — відкрити  •  Затиснути OK — меню дій та обраного");
+        remoteHint.setTextColor(Color.parseColor("#7f968d"));
+        remoteHint.setTextSize(11);
+        remoteHint.setTypeface(KonohaTheme.getNunito(context));
+        remoteHint.setPadding(0, 0, 0, KonohaTheme.dp(context, 10));
+        content.addView(remoteHint);
 
         // 3. App Grid (4 columns)
         grid = new GridLayout(context);
@@ -359,9 +369,8 @@ public class LibraryPanel extends FrameLayout {
         if (focusedPackage != null) {
             View replacement = findCardByPackage(focusedPackage);
             if (replacement != null) {
-                View target = pinFocused ? replacement.findViewById(android.R.id.button1) : replacement;
-                target.requestFocus();
-                updateAuraTarget(target);
+                replacement.requestFocus();
+                updateAuraTarget(replacement);
             } else {
                 sheetContainer.getCloseButton().requestFocus();
             }
@@ -422,38 +431,16 @@ public class LibraryPanel extends FrameLayout {
         descView.setGravity(Gravity.CENTER);
         card.addView(descView);
 
-        // Pin button
-        TextView pinBtn = new TextView(getContext());
-        pinBtn.setText(app.isPinned() ? "★ Закріплено" : "✦ Закріпити");
-        pinBtn.setTextColor(app.isPinned() ? KonohaTheme.COLOR_ORANGE : Color.parseColor("#a5bbb1"));
-        pinBtn.setTextSize(10);
-        pinBtn.setTypeface(KonohaTheme.getNunito(getContext()));
-        pinBtn.setPadding(0, KonohaTheme.dp(getContext(), 6), 0, 0);
-        pinBtn.setClickable(true);
-        pinBtn.setId(android.R.id.button1);
-        pinBtn.setFocusable(true);
-        pinBtn.setFocusableInTouchMode(true);
-        pinBtn.setOnClickListener(v -> {
-            appManager.togglePin(app.getPackageName());
-            if (dockView != null) dockView.render();
-            renderApps();
-        });
-        card.addView(pinBtn);
-
-        card.setOnClickListener(v -> {
-            if (listener != null) listener.onAppLaunch(app);
-        });
-
-        card.setOnKeyListener((v, keyCode, event) -> {
-            if (event.getAction() == android.view.KeyEvent.ACTION_DOWN &&
-                    (keyCode == android.view.KeyEvent.KEYCODE_DPAD_CENTER
-                            || keyCode == android.view.KeyEvent.KEYCODE_ENTER
-                            || keyCode == android.view.KeyEvent.KEYCODE_NUMPAD_ENTER)) {
-                card.performClick();
-                return true;
-            }
-            return false;
-        });
+        // Pin status badge (visual only, non-focusable)
+        TextView pinBadge = new TextView(getContext());
+        pinBadge.setText(app.isPinned() ? "★ В обраному" : "");
+        pinBadge.setTextColor(KonohaTheme.COLOR_GOLD);
+        pinBadge.setTextSize(10);
+        pinBadge.setTypeface(KonohaTheme.getNunitoBold(getContext()));
+        pinBadge.setPadding(0, KonohaTheme.dp(getContext(), 4), 0, 0);
+        pinBadge.setFocusable(false);
+        pinBadge.setClickable(false);
+        card.addView(pinBadge);
 
         card.setOnFocusChangeListener((v, hasFocus) -> {
             v.setScaleX(hasFocus ? 1.05f : 1.0f);
@@ -466,6 +453,18 @@ public class LibraryPanel extends FrameLayout {
             v.setBackground(d);
             if (hasFocus && listener != null) {
                 listener.onAppFocused(v, app);
+            }
+        });
+
+        TVKeyHelper.attach(card, new TVKeyHelper.OnTVCardClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (listener != null) listener.onAppLaunch(app);
+            }
+
+            @Override
+            public void onLongClick(View v) {
+                if (listener != null) listener.onAppContextMenuRequested(v, app);
             }
         });
 

@@ -14,7 +14,7 @@
     </queries>
 
     <application
-        android:label="Naruto · Коноха"
+        android:label="Naruto · Коноха · Native"
         android:icon="@drawable/konoha_icon"
         android:banner="@drawable/konoha_banner"
         android:theme="@android:style/Theme.Material.NoActionBar"

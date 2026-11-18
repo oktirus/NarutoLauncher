@@ -7,4 +7,6 @@
     <item type="id" name="runner_hero" />
     <item type="id" name="order_up" />
     <item type="id" name="order_down" />
+    <item type="id" name="order_remove" />
+    <item type="id" name="tv_key_cancel_press" />
 </resources>

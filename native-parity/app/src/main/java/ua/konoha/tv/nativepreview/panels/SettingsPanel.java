@@ -642,4 +642,16 @@ public class SettingsPanel extends FrameLayout {
     public void setHomeScreenActive(boolean active) {
         homeScreenValueText.setText(active ? "Коноха · активний" : "Зробити основним");
     }
+
+    public void focusInitial() {
+        post(() -> {
+            if (content != null && content.getChildCount() > 0) {
+                View first = content.getChildAt(0);
+                if (first != null) {
+                    first.requestFocusFromTouch();
+                    first.requestFocus();
+                }
+            }
+        });
+    }
 }

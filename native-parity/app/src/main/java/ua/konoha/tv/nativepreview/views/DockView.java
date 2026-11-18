@@ -25,6 +25,7 @@ import java.util.Map;
 public class DockView extends HorizontalScrollView {
     public interface OnDockItemClickListener {
         void onAppClick(AppItem app);
+        void onAppLongClick(View view, AppItem app, int position);
         void onLibraryClick();
     }
 
@@ -213,10 +214,6 @@ public class DockView extends HorizontalScrollView {
         metaView.setPadding(0, KonohaTheme.dp(getContext(), 2), 0, 0);
         card.addView(metaView);
 
-        card.setOnClickListener(v -> {
-            if (clickListener != null) clickListener.onAppClick(app);
-        });
-
         card.setOnFocusChangeListener((v, hasFocus) -> {
             iconView.animate()
                     .scaleX(hasFocus ? 1.045f : 1.0f)
@@ -234,6 +231,22 @@ public class DockView extends HorizontalScrollView {
             if (focusListener != null) {
                 if (hasFocus) focusListener.onItemFocused(v, app);
                 else focusListener.onDockFocusCleared();
+            }
+        });
+
+        TVKeyHelper.attach(card, new TVKeyHelper.OnTVCardClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (clickListener != null) clickListener.onAppClick(app);
+            }
+
+            @Override
+            public void onLongClick(View v) {
+                if (clickListener != null) {
+                    List<AppItem> dock = appManager.getDockApps();
+                    int pos = dock.indexOf(app);
+                    clickListener.onAppLongClick(v, app, pos);
+                }
             }
         });
 

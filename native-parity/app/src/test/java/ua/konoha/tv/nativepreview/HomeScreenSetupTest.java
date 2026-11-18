@@ -41,11 +41,13 @@ public class HomeScreenSetupTest {
     public static class TestActivity extends Activity {
         final List<Intent> opened = new ArrayList<>();
         final List<String> blocked = new ArrayList<>();
+        int lastRequestCode;
         @Override public void startActivity(Intent intent) {
             if (blocked.contains(intent.getAction())) throw new ActivityNotFoundException(intent.getAction());
             opened.add(intent);
         }
         @Override public void startActivityForResult(Intent intent, int code) {
+            lastRequestCode = code;
             startActivity(intent);
         }
     }
@@ -133,6 +135,7 @@ public class HomeScreenSetupTest {
         ShadowRoleManager roles = Shadows.shadowOf(activity.getSystemService(RoleManager.class));
         roles.addAvailableRole(RoleManager.ROLE_HOME);
         roles.addHeldRole(RoleManager.ROLE_HOME);
+        homePackage(activity.getPackageName());
         assertTrue(setup.isDefaultHome());
         setup.showFirstRunPrompt();
         assertNull(ShadowAlertDialog.getLatestAlertDialog());
@@ -164,6 +167,102 @@ public class HomeScreenSetupTest {
             ((View) row.getParent()).performClick();
             assertEquals(Settings.ACTION_HOME_SETTINGS, activity.opened.get(0).getAction());
         } finally { audio.release(); }
+    }
+
+    @Test @Config(sdk = 35) public void unsuccessfulRoleChoiceOffersSystemSettings() {
+        Shadows.shadowOf(activity.getSystemService(RoleManager.class)).addAvailableRole(RoleManager.ROLE_HOME);
+        setup.openSelection();
+        assertTrue(setup.onActivityResult(activity.lastRequestCode));
+        AlertDialog result = ShadowAlertDialog.getLatestAlertDialog();
+        assertTrue(result.isShowing());
+        assertEquals("Домашній екран ще не змінено", Shadows.shadowOf(result).getTitle());
+        result.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+        assertEquals(Settings.ACTION_HOME_SETTINGS, activity.opened.get(1).getAction());
+    }
+
+    @Test @Config(sdk = 35) public void grantedRoleIsVerifiedBeforeSuccess() {
+        ShadowRoleManager roles = Shadows.shadowOf(activity.getSystemService(RoleManager.class));
+        roles.addAvailableRole(RoleManager.ROLE_HOME);
+        setup.openSelection();
+        roles.addHeldRole(RoleManager.ROLE_HOME);
+        homePackage(activity.getPackageName());
+        assertTrue(setup.onActivityResult(activity.lastRequestCode));
+        assertTrue(org.robolectric.shadows.ShadowToast.getTextOfLatestToast().contains("за замовчуванням"));
+        assertNull(ShadowAlertDialog.getLatestAlertDialog());
+        assertFalse("Duplicate results must not reopen UI", setup.onActivityResult(activity.lastRequestCode));
+    }
+
+    @Test public void returningFromSettingsChecksActualHomeAndOffersRetryOnce() {
+        setup.openSelection();
+        setup.onResume();
+        AlertDialog result = ShadowAlertDialog.getLatestAlertDialog();
+        assertTrue(result.isShowing());
+        result.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+        Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+        setup.onResume();
+        assertFalse(result.isShowing());
+        assertEquals("No automatic repeated system UI", 1, activity.opened.size());
+    }
+
+    @Test public void successfulSettingsSelectionReportsSuccess() {
+        setup.openSelection();
+        homePackage(activity.getPackageName());
+        setup.onResume();
+        assertTrue(org.robolectric.shadows.ShadowToast.getTextOfLatestToast().contains("за замовчуванням"));
+        assertNull(ShadowAlertDialog.getLatestAlertDialog());
+    }
+
+    @Test @Config(sdk = 35) public void roleGrantDoesNotConfirmHomeWhenAnotherAppResolvesIt() {
+        ShadowRoleManager roles = Shadows.shadowOf(activity.getSystemService(RoleManager.class));
+        roles.addAvailableRole(RoleManager.ROLE_HOME);
+        setup.openSelection();
+        int requestCode = activity.lastRequestCode;
+        recreateSetup();
+        roles = Shadows.shadowOf(activity.getSystemService(RoleManager.class));
+        roles.addHeldRole(RoleManager.ROLE_HOME);
+        assertFalse(setup.isDefaultHome());
+        assertTrue(setup.onActivityResult(requestCode));
+        assertTrue(ShadowAlertDialog.getLatestAlertDialog().isShowing());
+        assertFalse(setup.onActivityResult(requestCode));
+    }
+
+    @Test public void returningFromHomeSettingsAfterRecreationReadsResultOnce() {
+        setup.openSelection();
+        recreateSetup();
+        setup.onResume();
+        AlertDialog result = ShadowAlertDialog.getLatestAlertDialog();
+        assertNotNull("Returning from Settings must still show the result", result);
+        assertTrue(result.isShowing());
+        result.dismiss();
+        Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+        setup.onResume();
+        assertFalse(result.isShowing());
+        assertSame(result, ShadowAlertDialog.getLatestAlertDialog());
+    }
+
+    private void recreateSetup() {
+        Bundle state = new Bundle();
+        setup.saveState(state);
+        setup.close();
+        controller.recreate();
+        activity = controller.get();
+        setup = new HomeScreenSetup(activity, state);
+        homePackage("another.launcher");
+    }
+
+    @Test public void ordinaryResumeAndUnrelatedResultsDoNotPrompt() {
+        setup.onResume();
+        assertFalse(setup.onActivityResult(123));
+        assertNull(ShadowAlertDialog.getLatestAlertDialog());
+        assertTrue(activity.opened.isEmpty());
+    }
+
+    @Test public void closingDiscardsPendingSelection() {
+        setup.openSelection();
+        setup.close();
+        setup.onResume();
+        assertNull(ShadowAlertDialog.getLatestAlertDialog());
     }
 
     private static View findText(View view, String text) {

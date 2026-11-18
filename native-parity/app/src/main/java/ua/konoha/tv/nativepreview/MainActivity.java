@@ -30,6 +30,7 @@ import ua.konoha.tv.nativepreview.views.*;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
@@ -61,6 +62,7 @@ public class MainActivity extends Activity {
 
     // Panels
     private FrameLayout modalContainer;
+    private FrameLayout contextMenuContainer;
     private LibraryPanel libraryPanel;
     private OrderPanel orderPanel;
     private ScenesPanel scenesPanel;
@@ -111,9 +113,10 @@ public class MainActivity extends Activity {
         // 1. Ініціалізація підсистем
         prefs = new PreferencesManager(this);
         appManager = new AppManager(this, prefs);
-        homeScreenSetup = new HomeScreenSetup(this);
+        homeScreenSetup = new HomeScreenSetup(this, savedInstanceState);
         updateController = new UpdateController(this, () -> activityResumed && hasWindowFocus()
                 && activePanel == null && ambientOverlay != null && ambientOverlay.getVisibility() != View.VISIBLE
+                && !isContextMenuOpen()
                 && !homeScreenSetup.isPromptShowing() && !audioController.isLaunching()
                 && !updateController.isShowing());
         audioController = new AudioController(this, prefs);
@@ -207,6 +210,14 @@ public class MainActivity extends Activity {
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT
         ));
 
+        // Контейнер контекстного меню застосунків
+        contextMenuContainer = new FrameLayout(this);
+        contextMenuContainer.setVisibility(View.GONE);
+        contextMenuContainer.setElevation(70f);
+        rootLayout.addView(contextMenuContainer, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT
+        ));
+
         setContentView(rootLayout);
         focusChangeListener = (oldFocus, newFocus) -> {
             if (isInside(newFocus, dockView)) {
@@ -215,7 +226,8 @@ public class MainActivity extends Activity {
                 chakraFocusView.setTargetView(null);
             }
             if (activePanel == null && newFocus != null && newFocus != rootLayout
-                    && !isInside(newFocus, modalContainer) && !isInside(newFocus, ambientOverlay)) rememberHomeFocus(newFocus);
+                    && !isInside(newFocus, modalContainer) && !isInside(newFocus, ambientOverlay)
+                    && !isInside(newFocus, contextMenuContainer)) rememberHomeFocus(newFocus);
         };
         rootLayout.getViewTreeObserver().addOnGlobalFocusChangeListener(focusChangeListener);
         rootLayout.getViewTreeObserver().addOnGlobalLayoutListener(homeEntryLayoutListener);
@@ -389,6 +401,9 @@ public class MainActivity extends Activity {
         dockView = new DockView(this, appManager);
         dockView.setOnDockItemClickListener(new DockView.OnDockItemClickListener() {
             @Override public void onAppClick(AppItem app) { launchApp(app); }
+            @Override public void onAppLongClick(View view, AppItem app, int position) {
+                showContextMenu(app, true, position, view);
+            }
             @Override public void onLibraryClick() { openLibrary(); }
         });
         dockView.setOnDockItemFocusListener(new DockView.OnDockItemFocusListener() {
@@ -554,6 +569,7 @@ public class MainActivity extends Activity {
         closeActivePanel();
         activePanel = panel;
         mainShell.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+        modalContainer.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
         backgroundView.setDecorPaused(true);
         chakraFocusView.setTargetView(null);
         modalContainer.removeAllViews();
@@ -576,7 +592,7 @@ public class MainActivity extends Activity {
     }
 
     private void rememberHomeFocus(View focused) {
-        if (focused == null || isInside(focused, modalContainer) || isInside(focused, ambientOverlay)) return;
+        if (focused == null || isInside(focused, modalContainer) || isInside(focused, ambientOverlay) || isInside(focused, contextMenuContainer)) return;
         lastFocusedView = focused;
         Object tag = focused.getTag();
         lastFocusedPackage = tag instanceof AppItem ? ((AppItem) tag).getPackageName() : null;
@@ -584,7 +600,8 @@ public class MainActivity extends Activity {
     }
 
     private void restoreHomeFocus() {
-        if (!activityResumed || activePanel != null || ambientOverlay.getVisibility() == View.VISIBLE) return;
+        if (!activityResumed || activePanel != null || ambientOverlay.getVisibility() == View.VISIBLE
+                || isContextMenuOpen()) return;
         View target = focusFirstAppOnHomeEntry ? dockView.getFirstCard() : null;
         if (!focusFirstAppOnHomeEntry && lastFocusedIsLibrary) {
             target = dockView.getArchiveCard();
@@ -617,6 +634,7 @@ public class MainActivity extends Activity {
     }
 
     public void closeActivePanel() {
+        closeContextMenu(false);
         if (activePanel != null) {
             View closing = activePanel;
             if (closing instanceof RunnerGameView) {
@@ -638,6 +656,7 @@ public class MainActivity extends Activity {
             }
             modalContainer.removeAllViews();
             modalContainer.setVisibility(View.GONE);
+            modalContainer.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
             activePanel = null;
             mainShell.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
             techniqueRenderer.trimMemory(TechniqueRenderer.platesFor(prefs.getTechnique()));
@@ -657,6 +676,9 @@ public class MainActivity extends Activity {
             libraryPanel = new LibraryPanel(this, appManager, dockView, techniqueRenderer);
             libraryPanel.setOnLibraryActionListener(new LibraryPanel.OnLibraryActionListener() {
                 @Override public void onAppLaunch(AppItem app) { launchApp(app); }
+                @Override public void onAppContextMenuRequested(View view, AppItem app) {
+                    showContextMenu(app, false, -1, view);
+                }
                 @Override public void onOrderPanelRequested() { openOrder(); }
                 @Override public void onCloseRequested() { closeActivePanel(); }
                 @Override public void onAppFocused(View view, AppItem app) {
@@ -747,7 +769,6 @@ public class MainActivity extends Activity {
                     appManager.reloadAppsAsync(() -> {
                         if (!activityResumed || isDestroyed()) return;
                         dockView.render();
-            wireSpatialNavigation();
                         wireSpatialNavigation();
                         toastOverlay.show("Архів застосунків оновлено", 2500);
                     });
@@ -759,6 +780,7 @@ public class MainActivity extends Activity {
         showPanel(settingsPanel);
         settingsPanel.updateState();
         settingsPanel.setHomeScreenActive(homeScreenSetup.isDefaultHome());
+        settingsPanel.focusInitial();
         audioController.playUiSound();
     }
 
@@ -788,6 +810,135 @@ public class MainActivity extends Activity {
                         + "Права на Naruto належать їхнім власникам. Фанатський лаунчер.")
                 .setPositiveButton("Зрозуміло", null)
                 .show();
+    }
+
+    private View lastContextMenuOriginView;
+
+    private boolean isContextMenuOpen() {
+        return contextMenuContainer != null && contextMenuContainer.getVisibility() == View.VISIBLE;
+    }
+
+    public void showContextMenu(AppItem app, boolean isFromDock, int dockPosition, View originView) {
+        if (!activityResumed || isDestroyed() || isFinishing()) return;
+        this.lastContextMenuOriginView = originView;
+        mainShell.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+        if (activePanel != null && modalContainer != null) {
+            modalContainer.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+        }
+        contextMenuContainer.removeAllViews();
+        List<AppItem> dockApps = appManager.getDockApps();
+        AppContextMenuPanel panel = new AppContextMenuPanel(this, app, isFromDock,
+                dockPosition, dockApps.size(), new AppContextMenuPanel.OnContextMenuActionListener() {
+            @Override
+            public void onLaunch(AppItem a) {
+                closeContextMenu();
+                launchApp(a);
+            }
+
+            @Override
+            public void onTogglePin(AppItem a) {
+                lastContextMenuOriginView = null;
+                closeContextMenu();
+                boolean nowPinned = appManager.togglePin(a.getPackageName());
+                if (dockView != null) dockView.render();
+                wireSpatialNavigation();
+                if (libraryPanel != null) libraryPanel.renderApps();
+                if (orderPanel != null) orderPanel.renderList();
+                audioController.playUiSound();
+                String message = "☆ Прибрано з обраного";
+                if (nowPinned) {
+                    boolean visibleOnHome = dockView.findCardByPackage(a.getPackageName()) != null;
+                    message = visibleOnHome ? "★ Додано до обраного й показано на головному екрані"
+                            : "★ Додано до обраного · поза головним екраном";
+                }
+                toastOverlay.show(message, 2500);
+                if (activePanel == libraryPanel && libraryPanel != null) {
+                    View newCard = libraryPanel.findCardByPackage(a.getPackageName());
+                    if (newCard != null) newCard.post(newCard::requestFocus);
+                } else if (dockView != null) {
+                    View newCard = dockView.findCardByPackage(a.getPackageName());
+                    if (newCard != null) newCard.post(newCard::requestFocus);
+                    else restoreHomeFocus();
+                } else {
+                    restoreHomeFocus();
+                }
+            }
+
+            @Override
+            public void onMove(AppItem a, int direction) {
+                lastContextMenuOriginView = null;
+                closeContextMenu();
+                appManager.moveFavorite(a.getPackageName(), direction);
+                if (dockView != null) dockView.render();
+                wireSpatialNavigation();
+                if (orderPanel != null) orderPanel.renderList();
+                audioController.playUiSound();
+                if (dockView != null) {
+                    View newCard = dockView.findCardByPackage(a.getPackageName());
+                    if (newCard != null) {
+                        newCard.post(newCard::requestFocus);
+                    }
+                }
+            }
+
+            @Override
+            public void onOpenOrder() {
+                lastContextMenuOriginView = null;
+                closeContextMenu();
+                openOrder();
+            }
+
+            @Override
+            public void onAppInfo(AppItem a) {
+                closeContextMenu();
+                openAppInfo(a);
+            }
+
+            @Override
+            public void onDismiss() {
+                closeContextMenu();
+            }
+        });
+
+        contextMenuContainer.addView(panel);
+        contextMenuContainer.setVisibility(View.VISIBLE);
+        audioController.playUiSound();
+    }
+
+    public void closeContextMenu() {
+        closeContextMenu(true);
+    }
+
+    private void closeContextMenu(boolean restoreFocus) {
+        if (isContextMenuOpen()) {
+            contextMenuContainer.removeAllViews();
+            contextMenuContainer.setVisibility(View.GONE);
+            if (modalContainer != null) {
+                modalContainer.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
+            }
+            if (activePanel == null) {
+                mainShell.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
+            }
+            if (restoreFocus && lastContextMenuOriginView != null && lastContextMenuOriginView.isAttachedToWindow()) {
+                // Restore before starting an external activity so the library can retain the package on resume.
+                lastContextMenuOriginView.requestFocus();
+            } else if (restoreFocus && activePanel == null) {
+                restoreHomeFocus();
+            }
+            lastContextMenuOriginView = null;
+        }
+    }
+
+    public void openAppInfo(AppItem app) {
+        if (app == null) return;
+        try {
+            Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            intent.setData(android.net.Uri.parse("package:" + app.getPackageName()));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+        } catch (Exception e) {
+            Toast.makeText(this, "Не вдалося відкрити налаштування", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void enterAmbient() {
@@ -863,11 +1014,25 @@ public class MainActivity extends Activity {
     public boolean dispatchKeyEvent(KeyEvent event) {
         resetIdleTimer();
 
-        if (event.getAction() == KeyEvent.ACTION_DOWN) {
-            int keyCode = event.getKeyCode();
+        int keyCode = event.getKeyCode();
+        boolean back = keyCode == KeyEvent.KEYCODE_BACK || keyCode == KeyEvent.KEYCODE_ESCAPE;
+        boolean menu = keyCode == KeyEvent.KEYCODE_MENU;
+        if (event.getAction() == KeyEvent.ACTION_DOWN && (back || menu) && event.getRepeatCount() > 0) {
+            return true;
+        }
 
-            // Скасування очікування запуску по Back / Escape
-            if (keyCode == KeyEvent.KEYCODE_BACK || keyCode == KeyEvent.KEYCODE_ESCAPE) {
+        // 1. Контекстне меню перехоплює Back, Escape та Menu для закриття
+        if (isContextMenuOpen()) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN && (back || menu)) {
+                closeContextMenu();
+                return true;
+            }
+            return super.dispatchKeyEvent(event);
+        }
+
+        // 2. Скасування очікування запуску або закриття активних панелей по Back / Escape, відкриття налаштувань по Menu
+        if (event.getAction() == KeyEvent.ACTION_DOWN) {
+            if (back) {
                 if (audioController.cancelPendingLaunch()) {
                     toastOverlay.hide();
                     return true;
@@ -886,8 +1051,7 @@ public class MainActivity extends Activity {
                 return true;
             }
 
-            // Відкриття налаштувань по Menu
-            if (keyCode == KeyEvent.KEYCODE_MENU) {
+            if (menu) {
                 if (ambientOverlay.getVisibility() == View.VISIBLE) {
                     exitAmbient();
                     return true;
@@ -895,8 +1059,11 @@ public class MainActivity extends Activity {
                 if (activePanel instanceof RunnerGameView) {
                     return runnerGameView.onKeyDown(keyCode, event);
                 }
-                if (settingsPanel != null && activePanel == settingsPanel) closeActivePanel();
-                else openSettings();
+                if (settingsPanel != null && activePanel == settingsPanel) {
+                    closeActivePanel();
+                } else {
+                    openSettings();
+                }
                 return true;
             }
         }
@@ -923,11 +1090,24 @@ public class MainActivity extends Activity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
+        if (!hasFocus) TVKeyHelper.cancelPendingPress(getWindow().getDecorView().findFocus());
         if (hasFocus && activityResumed && activePanel == null && !updateController.isShowing()
                 && (ambientOverlay == null || ambientOverlay.getVisibility() != View.VISIBLE)) {
             restoreHomeFocus();
             homeScreenSetup.showFirstRunPrompt();
         }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        homeScreenSetup.saveState(outState);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (homeScreenSetup != null) homeScreenSetup.onActivityResult(requestCode);
     }
 
     @Override
@@ -974,6 +1154,7 @@ public class MainActivity extends Activity {
             techniquesPanel.renderTechniques();
         }
         audioController.resumeMusic();
+        homeScreenSetup.onResume();
         if (settingsPanel != null) settingsPanel.setHomeScreenActive(homeScreenSetup.isDefaultHome());
         updateController.onResume();
         mainHandler.removeCallbacks(updateCheckRunnable);
@@ -985,6 +1166,8 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         activityResumed = false;
+        TVKeyHelper.cancelPendingPress(getWindow().getDecorView().findFocus());
+        closeContextMenu(false);
         mainHandler.removeCallbacks(updateCheckRunnable);
         updateController.cancel();
         audioController.cancelPendingLaunch();
@@ -1019,6 +1202,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        closeContextMenu(false);
         mainHandler.removeCallbacksAndMessages(null);
         if (focusChangeListener != null && rootLayout != null && rootLayout.getViewTreeObserver().isAlive()) {
             rootLayout.getViewTreeObserver().removeOnGlobalFocusChangeListener(focusChangeListener);

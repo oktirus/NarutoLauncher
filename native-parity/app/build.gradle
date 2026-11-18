@@ -29,7 +29,8 @@ android {
         unitTests.returnDefaultValues = true
         unitTests.includeAndroidResources = true
         unitTests.all {
-            jvmArgs '--add-opens=java.base/java.lang=ALL-UNNAMED',
+            jvmArgs '-Dfile.encoding=UTF-8',
+                    '--add-opens=java.base/java.lang=ALL-UNNAMED',
                     '--add-opens=java.base/java.util=ALL-UNNAMED',
                     '--add-opens=java.base/java.io=ALL-UNNAMED',
                     '--add-opens=java.base/java.net=ALL-UNNAMED',
