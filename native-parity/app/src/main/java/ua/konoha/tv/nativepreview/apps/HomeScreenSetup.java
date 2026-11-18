@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
+import ua.konoha.tv.nativepreview.R;
 
 /** User-approved HOME selection, with a one-time suggestion after first launch. */
 public final class HomeScreenSetup {
@@ -42,11 +43,30 @@ public final class HomeScreenSetup {
     }
 
     public boolean isDefaultHome() {
+        return activity.getPackageName().equals(resolvedHomePackage(activity));
+    }
+
+    static String resolvedHomePackage(Context context) {
         // A HOME role grant can disagree with the activity Android actually resolves.
         Intent home = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
-        ResolveInfo resolved = activity.getPackageManager().resolveActivity(home, PackageManager.MATCH_DEFAULT_ONLY);
+        ResolveInfo resolved = context.getPackageManager().resolveActivity(home, PackageManager.MATCH_DEFAULT_ONLY);
         return resolved != null && resolved.activityInfo != null
-                && activity.getPackageName().equals(resolved.activityInfo.packageName);
+                ? resolved.activityInfo.packageName : null;
+    }
+
+    public void showRedirectSettings() {
+        new AlertDialog.Builder(activity)
+                .setTitle(R.string.home_redirect_title)
+                .setMessage(R.string.home_redirect_setup)
+                .setPositiveButton(R.string.home_redirect_open_settings, (dialog, which) -> {
+                    try {
+                        activity.startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+                    } catch (ActivityNotFoundException | SecurityException error) {
+                        Toast.makeText(activity, R.string.home_redirect_settings_unavailable, Toast.LENGTH_LONG).show();
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 
     public void saveState(Bundle outState) {

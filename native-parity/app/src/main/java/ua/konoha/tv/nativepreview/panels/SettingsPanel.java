@@ -1,6 +1,7 @@
 package ua.konoha.tv.nativepreview.panels;
 
 import android.content.Context;
+import ua.konoha.tv.nativepreview.R;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.StateListDrawable;
@@ -36,6 +37,7 @@ public class SettingsPanel extends FrameLayout {
         void onAmbientRequested();
         void onSystemSettingsRequested(String target);
         void onHomeScreenRequested();
+        void onHomeRedirectRequested();
         void onUpdatesRequested();
         void onRefreshAppsRequested();
         void onAboutRequested();
@@ -50,6 +52,7 @@ public class SettingsPanel extends FrameLayout {
 
     private TextView techniqueValueText;
     private TextView homeScreenValueText;
+    private TextView homeRedirectValueText;
     private KonohaSwitch motionSwitch;
     private KonohaSwitch audioSwitch;
     private KonohaSwitch musicSwitch;
@@ -179,6 +182,12 @@ public class SettingsPanel extends FrameLayout {
         });
         homeScreenValueText = homeRow.findViewById(android.R.id.text2);
         content.addView(homeRow);
+        View redirectRow = createNavigationLink(context.getString(R.string.home_redirect_title),
+                context.getString(R.string.home_redirect_disabled), v -> {
+                    if (listener != null) listener.onHomeRedirectRequested();
+                });
+        homeRedirectValueText = redirectRow.findViewById(android.R.id.text2);
+        content.addView(redirectRow);
         String installedVersion = "Перевірити версію";
         try { installedVersion = "v" + context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName; }
         catch (android.content.pm.PackageManager.NameNotFoundException error) {
@@ -641,6 +650,10 @@ public class SettingsPanel extends FrameLayout {
 
     public void setHomeScreenActive(boolean active) {
         homeScreenValueText.setText(active ? "Коноха · активний" : "Зробити основним");
+    }
+
+    public void setHomeRedirectEnabled(boolean enabled) {
+        homeRedirectValueText.setText(enabled ? R.string.home_redirect_enabled : R.string.home_redirect_disabled);
     }
 
     public void focusInitial() {

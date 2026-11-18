@@ -98,6 +98,18 @@ public class NativeUiRenderTest {
             capture(activity, "settings-home-not-default-963", 963, 541);
             panel.setHomeScreenActive(true);
             capture(activity, "settings-home-active-963", 963, 541);
+            android.widget.TextView redirectValue = NativeLifecycleTest.field(panel, "homeRedirectValueText");
+            View redirectRow = (View) redirectValue.getParent();
+            assertSame(redirectRow, row.focusSearch(View.FOCUS_DOWN));
+            assertTrue(redirectRow.requestFocus());
+            capture(activity, "settings-home-redirect-963", 963, 541);
+            assertTrue(redirectRow.performClick());
+            android.app.AlertDialog redirect = org.robolectric.shadows.ShadowAlertDialog.getLatestAlertDialog();
+            assertTrue(redirect.isShowing());
+            org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper())
+                    .idleFor(java.time.Duration.ofMillis(16));
+            captureView(redirect.getWindow().getDecorView(), "settings-home-redirect-prompt", 600, 360);
+            redirect.dismiss();
         } finally { controller.pause().stop().destroy(); }
     }
 

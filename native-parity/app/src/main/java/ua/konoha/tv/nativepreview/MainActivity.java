@@ -16,6 +16,7 @@ import android.view.*;
 import android.widget.*;
 
 import ua.konoha.tv.nativepreview.apps.AppManager;
+import ua.konoha.tv.nativepreview.apps.HomeRedirectService;
 import ua.konoha.tv.nativepreview.apps.HomeScreenSetup;
 import ua.konoha.tv.nativepreview.audio.AudioController;
 import ua.konoha.tv.nativepreview.model.AppItem;
@@ -768,6 +769,7 @@ public class MainActivity extends Activity {
                 @Override public void onAmbientRequested() { enterAmbient(); }
                 @Override public void onSystemSettingsRequested(String target) { appManager.openSettings(target); }
                 @Override public void onHomeScreenRequested() { homeScreenSetup.openSelection(); }
+                @Override public void onHomeRedirectRequested() { homeScreenSetup.showRedirectSettings(); }
                 @Override public void onUpdatesRequested() { updateController.checkManually(); }
                 @Override public void onRefreshAppsRequested() {
                     appManager.reloadAppsAsync(() -> {
@@ -783,9 +785,15 @@ public class MainActivity extends Activity {
         }
         showPanel(settingsPanel);
         settingsPanel.updateState();
-        settingsPanel.setHomeScreenActive(homeScreenSetup.isDefaultHome());
+        updateHomeSettingsStatus();
         settingsPanel.focusInitial();
         audioController.playUiSound();
+    }
+
+    private void updateHomeSettingsStatus() {
+        if (settingsPanel == null) return;
+        settingsPanel.setHomeScreenActive(homeScreenSetup.isDefaultHome());
+        settingsPanel.setHomeRedirectEnabled(HomeRedirectService.isEnabled(this));
     }
 
     private void openGame() {
@@ -1079,7 +1087,8 @@ public class MainActivity extends Activity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-        if (Intent.ACTION_MAIN.equals(intent.getAction()) && intent.hasCategory(Intent.CATEGORY_HOME)) {
+        if (HomeRedirectService.ACTION_REDIRECTED_HOME.equals(intent.getAction())
+                || (Intent.ACTION_MAIN.equals(intent.getAction()) && intent.hasCategory(Intent.CATEGORY_HOME))) {
             updateController.cancel();
             focusFirstAppOnHomeEntry = true;
             audioController.cancelPendingLaunch();
@@ -1159,7 +1168,7 @@ public class MainActivity extends Activity {
         }
         audioController.resumeMusic();
         homeScreenSetup.onResume();
-        if (settingsPanel != null) settingsPanel.setHomeScreenActive(homeScreenSetup.isDefaultHome());
+        updateHomeSettingsStatus();
         updateController.onResume();
         mainHandler.removeCallbacks(updateCheckRunnable);
         mainHandler.postDelayed(updateCheckRunnable, 30000);

@@ -156,6 +156,7 @@ public class HomeScreenSetupTest {
             assertNotNull(findText(panel, "Зробити основним"));
             panel.setOnSettingsActionListener(new SettingsPanel.OnSettingsActionListener() {
                 public void onHomeScreenRequested() { setup.openSelection(); }
+                public void onHomeRedirectRequested() { setup.showRedirectSettings(); }
                 public void onUpdatesRequested() {}
                 public void onTechniquesRequested() {}
                 public void onAmbientRequested() {}
@@ -166,6 +167,17 @@ public class HomeScreenSetupTest {
             });
             ((View) row.getParent()).performClick();
             assertEquals(Settings.ACTION_HOME_SETTINGS, activity.opened.get(0).getAction());
+            View redirectRow = findText(panel, "Коноха після Home");
+            assertNotNull(redirectRow);
+            panel.setHomeRedirectEnabled(true);
+            assertNotNull(findText(panel, "Дозволено"));
+            ((View) redirectRow.getParent()).performClick();
+            AlertDialog redirect = ShadowAlertDialog.getLatestAlertDialog();
+            assertTrue(redirect.isShowing());
+            assertEquals(1, activity.opened.size());
+            redirect.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+            Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+            assertEquals(Settings.ACTION_ACCESSIBILITY_SETTINGS, activity.opened.get(1).getAction());
         } finally { audio.release(); }
     }
 

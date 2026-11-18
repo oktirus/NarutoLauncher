@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_redirect_title">Коноха після Home</string>
+    <string name="home_redirect_description">Відкриває Коноху, щойно з’являється домашній екран Google TV.</string>
+    <string name="home_redirect_setup">У «Спеціальних можливостях» увімкни службу «Коноха після Home». Вона реагує лише на появу домашнього екрана Google TV. У цьому ж меню її можна вимкнути.</string>
+    <string name="home_redirect_open_settings">Відкрити налаштування</string>
+    <string name="home_redirect_settings_unavailable">Не вдалося відкрити спеціальні можливості телевізора.</string>
+    <string name="home_redirect_enabled">Дозволено</string>
+    <string name="home_redirect_disabled">Вимкнено</string>
+</resources>

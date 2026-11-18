@@ -25,6 +25,7 @@ import org.robolectric.annotation.GraphicsMode;
 import org.robolectric.annotation.LooperMode;
 import org.robolectric.shadows.ShadowChoreographer;
 import ua.konoha.tv.nativepreview.apps.AppManager;
+import ua.konoha.tv.nativepreview.apps.HomeRedirectService;
 import ua.konoha.tv.nativepreview.apps.HomeScreenSetup;
 import ua.konoha.tv.nativepreview.model.AppItem;
 import ua.konoha.tv.nativepreview.panels.AppContextMenuPanel;
@@ -88,6 +89,19 @@ public class ContextMenuRegressionTest {
         openMenu(activity);
         controller.newIntent(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME));
         assertEquals(View.GONE, ((View) field(activity, "contextMenuContainer")).getVisibility());
+    }
+
+    @Test public void redirectedHomeClosesMenuAndFocusesFirstCard() throws Exception {
+        MainActivity activity = start();
+        DockView dock = field(activity, "dockView");
+        View second = ((ViewGroup) dock.getFirstCard().getParent()).getChildAt(1);
+        second.requestFocusFromTouch();
+        activity.showContextMenu((AppItem) second.getTag(), true, 1, second);
+        layout(activity);
+        controller.newIntent(new Intent(HomeRedirectService.ACTION_REDIRECTED_HOME));
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16));
+        assertEquals(View.GONE, ((View) field(activity, "contextMenuContainer")).getVisibility());
+        assertSame(dock.getFirstCard(), activity.getWindow().getDecorView().findFocus());
     }
 
     @Test public void homeFromSecondCardRestoresFirstCardAfterPendingCallbacks() throws Exception {
