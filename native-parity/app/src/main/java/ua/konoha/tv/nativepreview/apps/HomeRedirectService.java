@@ -3,6 +3,7 @@ package ua.konoha.tv.nativepreview.apps;
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
@@ -41,6 +42,18 @@ public final class HomeRedirectService extends AccessibilityService {
         return false;
     }
 
+    static Intent stockHomeIntent() {
+        return new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+                .setComponent(new ComponentName(GOOGLE_TV, GOOGLE_HOME))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    }
+
+    static boolean canConfigure(Context context) {
+        String selectedHome = HomeScreenSetup.resolvedHomePackage(context);
+        return GOOGLE_TV.equals(selectedHome) || (context.getPackageName().equals(selectedHome)
+                && context.getPackageManager().resolveActivity(stockHomeIntent(), 0) != null);
+    }
+
     @Override public void onAccessibilityEvent(AccessibilityEvent event) {
         if (event.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
                 || !TextUtils.equals(GOOGLE_TV, event.getPackageName())) return;
@@ -53,7 +66,9 @@ public final class HomeRedirectService extends AccessibilityService {
     }
 
     private void openKonoha() {
-        if (!GOOGLE_TV.equals(HomeScreenSetup.resolvedHomePackage(this))) return;
+        String selectedHome = HomeScreenSetup.resolvedHomePackage(this);
+        // TCL can show the stock Home even after Android resolves HOME to Konoha.
+        if (!GOOGLE_TV.equals(selectedHome) && !getPackageName().equals(selectedHome)) return;
         ignoreUntil = SystemClock.uptimeMillis() + DUPLICATE_WINDOW_MS;
         try {
             // This is an ordinary app launch. Leave the system HOME task with Google TV.

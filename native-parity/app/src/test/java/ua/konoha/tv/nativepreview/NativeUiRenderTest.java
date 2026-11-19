@@ -110,6 +110,52 @@ public class NativeUiRenderTest {
                     .idleFor(java.time.Duration.ofMillis(16));
             captureView(redirect.getWindow().getDecorView(), "settings-home-redirect-prompt", 600, 360);
             redirect.dismiss();
+            var mainLooper = org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper());
+            mainLooper.idle();
+            otherHome.activityInfo.packageName = "com.google.android.apps.tv.launcherx";
+            otherHome.activityInfo.name = otherHome.activityInfo.packageName + ".home.HomeActivity";
+            org.robolectric.Shadows.shadowOf(activity.getPackageManager())
+                    .setResolveInfosForIntent(new android.content.Intent(android.content.Intent.ACTION_MAIN)
+                            .addCategory(android.content.Intent.CATEGORY_HOME), java.util.List.of(otherHome));
+            ua.konoha.tv.nativepreview.apps.HomeScreenSetup setup = NativeLifecycleTest.field(activity, "homeScreenSetup");
+            NativeLifecycleTest.call(setup, "showSelectionResult");
+            android.app.AlertDialog fallback = org.robolectric.shadows.ShadowAlertDialog.getLatestAlertDialog();
+            assertTrue(fallback.isShowing());
+            assertEquals("Домашній екран ще не змінено",
+                    org.robolectric.Shadows.shadowOf(fallback).getTitle());
+            mainLooper.idleFor(java.time.Duration.ofMillis(16));
+            captureView(fallback.getWindow().getDecorView(), "home-redirect-offer-963", 720, 400);
+            fallback.dismiss();
+            mainLooper.idle();
+            org.robolectric.util.ReflectionHelpers.callInstanceMethod(setup, "showRedirectFailure",
+                    org.robolectric.util.ReflectionHelpers.ClassParameter.from(
+                            int.class, R.string.home_redirect_test_failed));
+            android.app.AlertDialog failure = org.robolectric.shadows.ShadowAlertDialog.getLatestAlertDialog();
+            assertTrue(failure.isShowing());
+            assertEquals(activity.getString(R.string.home_redirect_failure_title),
+                    org.robolectric.Shadows.shadowOf(failure).getTitle());
+            mainLooper.idleFor(java.time.Duration.ofMillis(16));
+            captureView(failure.getWindow().getDecorView(), "home-redirect-failure-963", 600, 360);
+            failure.dismiss();
+            mainLooper.idle();
+            var packages = org.robolectric.Shadows.shadowOf(activity.getPackageManager());
+            otherHome.activityInfo.exported = true;
+            packages.addOrUpdateActivity(otherHome.activityInfo);
+            setup.openSelection();
+            android.content.pm.ResolveInfo selected = new android.content.pm.ResolveInfo();
+            selected.activityInfo = new android.content.pm.ActivityInfo();
+            selected.activityInfo.packageName = activity.getPackageName();
+            selected.activityInfo.name = MainActivity.class.getName();
+            packages.setResolveInfosForIntent(new android.content.Intent(android.content.Intent.ACTION_MAIN)
+                    .addCategory(android.content.Intent.CATEGORY_HOME), java.util.List.of(selected));
+            activity.onWindowFocusChanged(true);
+            android.app.AlertDialog selection = org.robolectric.shadows.ShadowAlertDialog.getLatestAlertDialog();
+            assertEquals(activity.getString(R.string.home_selection_saved),
+                    org.robolectric.Shadows.shadowOf(selection).getTitle());
+            assertTrue(selection.isShowing());
+            mainLooper.idleFor(java.time.Duration.ofMillis(16));
+            captureView(selection.getWindow().getDecorView(), "home-selection-saved-963", 600, 360);
+            selection.dismiss();
         } finally { controller.pause().stop().destroy(); }
     }
 

@@ -115,6 +115,9 @@ public class MainActivity extends Activity {
         prefs = new PreferencesManager(this);
         appManager = new AppManager(this, prefs);
         homeScreenSetup = new HomeScreenSetup(this, savedInstanceState);
+        if (HomeRedirectService.ACTION_REDIRECTED_HOME.equals(getIntent().getAction())) {
+            homeScreenSetup.onRedirectedHome();
+        }
         updateController = new UpdateController(this, () -> activityResumed && hasWindowFocus()
                 && activePanel == null && ambientOverlay != null && ambientOverlay.getVisibility() != View.VISIBLE
                 && !isContextMenuOpen()
@@ -1087,7 +1090,9 @@ public class MainActivity extends Activity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-        if (HomeRedirectService.ACTION_REDIRECTED_HOME.equals(intent.getAction())
+        boolean redirected = HomeRedirectService.ACTION_REDIRECTED_HOME.equals(intent.getAction());
+        if (redirected) homeScreenSetup.onRedirectedHome();
+        if (redirected
                 || (Intent.ACTION_MAIN.equals(intent.getAction()) && intent.hasCategory(Intent.CATEGORY_HOME))) {
             updateController.cancel();
             focusFirstAppOnHomeEntry = true;
@@ -1104,6 +1109,10 @@ public class MainActivity extends Activity {
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         if (!hasFocus) TVKeyHelper.cancelPendingPress(getWindow().getDecorView().findFocus());
+        if (hasFocus && homeScreenSetup != null) {
+            homeScreenSetup.onWindowFocus();
+            updateHomeSettingsStatus();
+        }
         if (hasFocus && activityResumed && activePanel == null && !updateController.isShowing()
                 && (ambientOverlay == null || ambientOverlay.getVisibility() != View.VISIBLE)) {
             restoreHomeFocus();

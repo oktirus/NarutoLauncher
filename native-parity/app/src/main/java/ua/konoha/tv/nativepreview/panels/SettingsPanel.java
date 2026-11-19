@@ -649,7 +649,7 @@ public class SettingsPanel extends FrameLayout {
     }
 
     public void setHomeScreenActive(boolean active) {
-        homeScreenValueText.setText(active ? "Коноха · активний" : "Зробити основним");
+        homeScreenValueText.setText(active ? "Коноха · вибрано" : "Зробити основним");
     }
 
     public void setHomeRedirectEnabled(boolean enabled) {

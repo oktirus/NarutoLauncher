@@ -3,14 +3,19 @@ package ua.konoha.tv.nativepreview;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.role.RoleManager;
+import android.accessibilityservice.AccessibilityServiceInfo;
 import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ResolveInfo;
+import android.content.pm.ServiceInfo;
 import android.os.Bundle;
+import android.os.Looper;
 import android.provider.Settings;
 import android.view.View;
+import android.view.accessibility.AccessibilityManager;
 import android.widget.TextView;
 import org.junit.After;
 import org.junit.Before;
@@ -24,16 +29,20 @@ import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowAlertDialog;
 import org.robolectric.shadows.ShadowRoleManager;
 import ua.konoha.tv.nativepreview.apps.HomeScreenSetup;
+import ua.konoha.tv.nativepreview.apps.HomeRedirectService;
 import ua.konoha.tv.nativepreview.audio.AudioController;
 import ua.konoha.tv.nativepreview.panels.SettingsPanel;
 import ua.konoha.tv.nativepreview.prefs.PreferencesManager;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.Duration;
 import static org.junit.Assert.*;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 28)
 public class HomeScreenSetupTest {
+    private static final ComponentName STOCK_HOME = new ComponentName("com.google.android.apps.tv.launcherx",
+            "com.google.android.apps.tv.launcherx.home.HomeActivity");
     private ActivityController<TestActivity> controller;
     private TestActivity activity;
     private HomeScreenSetup setup;
@@ -42,6 +51,8 @@ public class HomeScreenSetupTest {
         final List<Intent> opened = new ArrayList<>();
         final List<String> blocked = new ArrayList<>();
         int lastRequestCode;
+        boolean windowFocused;
+        @Override public boolean hasWindowFocus() { return windowFocused; }
         @Override public void startActivity(Intent intent) {
             if (blocked.contains(intent.getAction())) throw new ActivityNotFoundException(intent.getAction());
             opened.add(intent);
@@ -151,7 +162,7 @@ public class HomeScreenSetupTest {
             View row = findText(panel, "Домашній екран");
             assertNotNull(row);
             panel.setHomeScreenActive(true);
-            assertNotNull(findText(panel, "Коноха · активний"));
+            assertNotNull(findText(panel, "Коноха · вибрано"));
             panel.setHomeScreenActive(false);
             assertNotNull(findText(panel, "Зробити основним"));
             panel.setOnSettingsActionListener(new SettingsPanel.OnSettingsActionListener() {
@@ -200,8 +211,8 @@ public class HomeScreenSetupTest {
         roles.addHeldRole(RoleManager.ROLE_HOME);
         homePackage(activity.getPackageName());
         assertTrue(setup.onActivityResult(activity.lastRequestCode));
-        assertTrue(org.robolectric.shadows.ShadowToast.getTextOfLatestToast().contains("за замовчуванням"));
-        assertNull(ShadowAlertDialog.getLatestAlertDialog());
+        assertEquals(activity.getString(R.string.home_selection_saved),
+                Shadows.shadowOf(ShadowAlertDialog.getLatestAlertDialog()).getTitle());
         assertFalse("Duplicate results must not reopen UI", setup.onActivityResult(activity.lastRequestCode));
     }
 
@@ -221,8 +232,27 @@ public class HomeScreenSetupTest {
         setup.openSelection();
         homePackage(activity.getPackageName());
         setup.onResume();
-        assertTrue(org.robolectric.shadows.ShadowToast.getTextOfLatestToast().contains("за замовчуванням"));
-        assertNull(ShadowAlertDialog.getLatestAlertDialog());
+        assertEquals(activity.getString(R.string.home_selection_saved),
+                Shadows.shadowOf(ShadowAlertDialog.getLatestAlertDialog()).getTitle());
+    }
+
+    @Test public void focusReturnFromTvSettingsShowsInstructionsEvenWhenKonohaIsSelected() {
+        setup.openSelection();
+        homePackage(activity.getPackageName());
+        registerStockHome();
+        activity.windowFocused = true;
+        setup.onWindowFocus();
+        AlertDialog result = ShadowAlertDialog.getLatestAlertDialog();
+        assertNotNull("The system overlay can return focus without resuming the Activity", result);
+        assertTrue(result.isShowing());
+        assertEquals(activity.getString(R.string.home_selection_check_google_tv), Shadows.shadowOf(result).getMessage());
+        assertEquals(activity.getString(R.string.home_redirect_title),
+                result.getButton(AlertDialog.BUTTON_POSITIVE).getText());
+        setup.onResume();
+        assertSame(result, ShadowAlertDialog.getLatestAlertDialog());
+        clickPositive(result);
+        assertEquals(activity.getString(R.string.home_redirect_setup),
+                Shadows.shadowOf(ShadowAlertDialog.getLatestAlertDialog()).getMessage());
     }
 
     @Test @Config(sdk = 35) public void roleGrantDoesNotConfirmHomeWhenAnotherAppResolvesIt() {
@@ -268,6 +298,95 @@ public class HomeScreenSetupTest {
         assertFalse(setup.onActivityResult(123));
         assertNull(ShadowAlertDialog.getLatestAlertDialog());
         assertTrue(activity.opened.isEmpty());
+    }
+
+    @Test public void failedGoogleHomeChoiceOffersRedirectAndKeepsSystemRetry() {
+        homePackage("com.google.android.apps.tv.launcherx");
+        setup.openSelection();
+        setup.onResume();
+        AlertDialog failure = ShadowAlertDialog.getLatestAlertDialog();
+        assertEquals("Домашній екран ще не змінено", Shadows.shadowOf(failure).getTitle());
+        assertEquals("Налаштування HOME", failure.getButton(AlertDialog.BUTTON_NEUTRAL).getText().toString());
+        clickPositive(failure);
+        AlertDialog instructions = ShadowAlertDialog.getLatestAlertDialog();
+        assertEquals(activity.getString(R.string.home_redirect_title), Shadows.shadowOf(instructions).getTitle());
+        assertTrue(setup.isPromptShowing());
+        assertEquals(1, activity.opened.size());
+        clickPositive(instructions);
+        assertEquals(Settings.ACTION_ACCESSIBILITY_SETTINGS, activity.opened.get(1).getAction());
+    }
+
+    @Test public void returningWithoutEnablingRedirectShowsRetryOnce() {
+        homePackage("com.google.android.apps.tv.launcherx");
+        setup.showRedirectSettings();
+        clickPositive(ShadowAlertDialog.getLatestAlertDialog());
+        setup.onResume();
+        AlertDialog failure = ShadowAlertDialog.getLatestAlertDialog();
+        assertEquals(activity.getString(R.string.home_redirect_failure_title), Shadows.shadowOf(failure).getTitle());
+        assertEquals(activity.getString(R.string.home_redirect_not_enabled), Shadows.shadowOf(failure).getMessage());
+        setup.onResume();
+        assertSame(failure, ShadowAlertDialog.getLatestAlertDialog());
+    }
+
+    @Test public void enabledRedirectIsVerifiedByReturningThroughTheService() {
+        homePackage(activity.getPackageName());
+        registerStockHome();
+        setup.showRedirectSettings();
+        clickPositive(ShadowAlertDialog.getLatestAlertDialog());
+        enableRedirect();
+        setup.onWindowFocus();
+        AlertDialog test = ShadowAlertDialog.getLatestAlertDialog();
+        assertEquals(activity.getString(R.string.home_redirect_test), test.getButton(AlertDialog.BUTTON_POSITIVE).getText());
+        clickPositive(test);
+        assertTrue(activity.opened.get(1).hasCategory(Intent.CATEGORY_HOME));
+        assertEquals(STOCK_HOME, activity.opened.get(1).getComponent());
+        setup.onRedirectedHome();
+        activity.windowFocused = true;
+        setup.onWindowFocus();
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(4));
+        assertEquals(activity.getString(R.string.home_redirect_test_passed),
+                Shadows.shadowOf(ShadowAlertDialog.getLatestAlertDialog()).getTitle());
+        assertTrue(setup.isPromptShowing());
+    }
+
+    @Test public void redirectWithoutConfirmationShowsFailureOnlyWhenKonohaIsBackOnScreen() {
+        homePackage("com.google.android.apps.tv.launcherx");
+        enableRedirect();
+        setup.showRedirectSettings();
+        clickPositive(ShadowAlertDialog.getLatestAlertDialog());
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(4));
+        assertFalse(setup.isPromptShowing());
+        activity.windowFocused = true;
+        setup.onWindowFocus();
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(4));
+        AlertDialog failure = ShadowAlertDialog.getLatestAlertDialog();
+        assertEquals(activity.getString(R.string.home_redirect_failure_title), Shadows.shadowOf(failure).getTitle());
+        assertEquals(activity.getString(R.string.home_redirect_test_failed), Shadows.shadowOf(failure).getMessage());
+        assertTrue(failure.isShowing());
+    }
+
+    private void enableRedirect() {
+        AccessibilityServiceInfo service = new AccessibilityServiceInfo();
+        ResolveInfo info = new ResolveInfo();
+        info.serviceInfo = new ServiceInfo();
+        info.serviceInfo.packageName = activity.getPackageName();
+        info.serviceInfo.name = HomeRedirectService.class.getName();
+        org.robolectric.util.ReflectionHelpers.setField(service, "mResolveInfo", info);
+        Shadows.shadowOf(activity.getSystemService(AccessibilityManager.class))
+                .setEnabledAccessibilityServiceList(List.of(service));
+    }
+
+    private void registerStockHome() {
+        ActivityInfo info = new ActivityInfo();
+        info.packageName = STOCK_HOME.getPackageName();
+        info.name = STOCK_HOME.getClassName();
+        info.exported = true;
+        Shadows.shadowOf(activity.getPackageManager()).addOrUpdateActivity(info);
+    }
+
+    private static void clickPositive(AlertDialog dialog) {
+        assertTrue(dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick());
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
     }
 
     @Test public void closingDiscardsPendingSelection() {

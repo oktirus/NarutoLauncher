@@ -68,9 +68,16 @@ public class HomeRedirectServiceTest {
         assertNull(Shadows.shadowOf(service).getNextStartedActivity());
     }
 
-    @Test public void currentSystemHomeIsCheckedBeforeRedirecting() {
+    @Test public void stockAppearingStillRedirectsWhenKonohaIsSelectedAsHome() {
         window(STOCK, STOCK_HOME);
         setResolvedHome(service.getPackageName(), MainActivity.class.getName());
+        idle();
+        assertNotNull(Shadows.shadowOf(service).getNextStartedActivity());
+    }
+
+    @Test public void anotherSelectedLauncherIsLeftAlone() {
+        window(STOCK, STOCK_HOME);
+        setResolvedHome("another.launcher", "another.launcher.Home");
         idle();
         assertNull(Shadows.shadowOf(service).getNextStartedActivity());
     }

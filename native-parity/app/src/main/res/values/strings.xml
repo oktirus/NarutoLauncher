@@ -4,7 +4,20 @@
     <string name="home_redirect_description">Відкриває Коноху, щойно з’являється домашній екран Google TV.</string>
     <string name="home_redirect_setup">У «Спеціальних можливостях» увімкни службу «Коноха після Home». Вона реагує лише на появу домашнього екрана Google TV. У цьому ж меню її можна вимкнути.</string>
     <string name="home_redirect_open_settings">Відкрити налаштування</string>
+    <string name="home_redirect_accessibility">Спецможливості</string>
     <string name="home_redirect_settings_unavailable">Не вдалося відкрити спеціальні можливості телевізора.</string>
     <string name="home_redirect_enabled">Дозволено</string>
     <string name="home_redirect_disabled">Вимкнено</string>
+    <string name="home_redirect_offer">Android зберігає Google TV як домашній екран. Можеш увімкнути «Коноха після Home», щоб після відкриття Google TV запускалася Коноха.</string>
+    <string name="home_selection_saved">Коноха вибрана в Android</string>
+    <string name="home_selection_check">Відкрий інший застосунок і натисни Home на пульті, щоб перевірити, який домашній екран відкривається.</string>
+    <string name="home_selection_check_google_tv">Відкрий інший застосунок і натисни Home на пульті. Якщо відкриється Google TV, повернися до Конохи зі списку застосунків і обери «Коноха після Home» в налаштуваннях.</string>
+    <string name="home_redirect_test">Перевірити</string>
+    <string name="home_redirect_test_help">Перевірка відкриє Google TV, а служба має повернути тебе до Конохи. Якщо залишишся в Google TV, відкрий Коноху зі списку застосунків, щоб побачити результат.</string>
+    <string name="home_redirect_failure_title">Перенаправлення Home не спрацювало</string>
+    <string name="home_redirect_not_enabled">Дозвіл для «Коноха після Home» ще вимкнений. Увімкни службу в «Спеціальних можливостях» і повтори перевірку.</string>
+    <string name="home_redirect_unsupported">Ця опція призначена для Google TV, коли домашнім екраном вибрано Google TV або Коноху. Перевір поточний вибір у налаштуваннях Android.</string>
+    <string name="home_redirect_test_failed">Коноха не отримала підтвердження перенаправлення. Перевір, чи увімкнена служба «Коноха після Home» в «Спеціальних можливостях», і спробуй ще раз.</string>
+    <string name="home_redirect_test_passed">Перенаправлення Home працює</string>
+    <string name="home_redirect_test_passed_help">Google TV відкрився, і служба повернула тебе до Конохи. Тепер відкрий інший застосунок і натисни Home на пульті.</string>
 </resources>
