@@ -7,6 +7,7 @@
 | [CleanYourTV](https://github.com/Gathin23/cleanyourtv) | Візуальний вступ, коротка навігація та окремі кроки встановлення й повернення стандартного лаунчера. |
 | [Papermorph](https://github.com/DozenTwelve/Papermorph) | Прев’ю поруч із коротким описом. Посилання відкриває матеріал, доступний відвідувачу без локального запуску. |
 | [LTvLauncher](https://github.com/leanbitlab-org/LtvLauncher) | Галерея за сценаріями використання, реліз із APK, вимоги до пристрою й окремий розділ для Home. |
+| [LiaScript Exporter](https://github.com/LiaScript/LiaScript-Exporter) | Відео у вбудованому плеєрі GitHub із паузою, перемотуванням і керуванням звуком. |
 
 ## Каркас
 
@@ -20,10 +21,9 @@
 [Завантажити APK]({{URL APK}}) · [Останній реліз]({{URL releases/latest}})
 · [Встановлення](#встановлення) · [Кнопка Home](#кнопка-home)
 
-[![{{Що відбувається на екрані}}](docs/media/demo.gif)](docs/media/demo.mp4?raw=true)
+https://github.com/user-attachments/assets/{{ID відеовкладення}}
 
-[Відео · MP4](docs/media/demo.mp4?raw=true)
-_{{Версія застосунку та спосіб запису}}_
+_{{Версія застосунку, пристрій або спосіб запису та короткий опис відео}}_
 
 ## Можливості
 
@@ -59,6 +59,7 @@ _{{Версія застосунку та спосіб запису}}_
 ## Перевірка перед публікацією
 
 - Відкрий README без входу до GitHub і перевір завантаження APK з першого екрана.
-- Звір зображення й відео з опублікованою версією застосунку. Для файлів у репозиторії використовуй відносні шляхи. [Відносні посилання GitHub](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#relative-links)
-- Додай до відео GIF або статичну обкладинку, щоб приклад був видимий у самому README. Вкажи спосіб запису, якщо демонстрація зроблена в емуляторі або програмним рендером.
+- Завантаж MP4 з H.264 як вкладення GitHub. Встав отриману адресу `github.com/user-attachments/assets/…` окремим абзацом. Для безплатного плану вкладися в 10 МБ. [Вкладення GitHub](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/attaching-files)
+- Перевір відтворення, паузу, перемотування і, за наявності аудіодоріжки, увімкнення звуку без входу до GitHub.
+- Звір зображення й відео з версією застосунку та вкажи джерело запису. Для файлів у репозиторії використовуй відносні шляхи. [Відносні посилання GitHub](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#relative-links)
 - Перевір сторінку на вузькому екрані. Локальні команди запуску залиш у документації розробника.

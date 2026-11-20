@@ -12,17 +12,13 @@
   · <a href="#кнопка-home">Кнопка Home</a>
 </p>
 
-<p align="center">
-  <a href="docs/media/konoha-demo.mp4?raw=true">
-    <img src="docs/media/konoha-demo.gif" width="864" alt="Головний екран Конохи, переміщення фокусу пультом і зміна шпалер">
-  </a>
-</p>
+## Відео з Lenovo
 
-<p align="center">
-  <a href="docs/media/konoha-demo.mp4?raw=true"><strong>Відео · MP4, 19 с</strong></a>
-  · <a href="#скриншоти">Скриншоти</a>
-  <br><sub>Програмний запис нативного інтерфейсу версії 1.1.3 без звуку.</sub>
-</p>
+https://github.com/user-attachments/assets/69fc5c88-88f5-4049-8d73-a279ab5000a0
+
+**00:00** Обране · **00:08** Галерея технік · **00:12** Чідорі · **00:19** Стрибок Гамабунти · **00:29** «Шлях шинобі»
+
+45 секунд з реального Lenovo на LineageOS. Увімкни звук у плеєрі, щоб почути навігацію, стрибок і підкат. Звуки мінігри записані з локальної демонстраційної збірки 1.1.3. [Ігрові звукові ефекти · ElevenLabs](https://elevenlabs.io/)
 
 ## Можливості
 
@@ -34,13 +30,13 @@
 
 ## Скриншоти
 
-| Архів застосунків | Налаштування |
+| Головний екран | Техніки навігації |
 | --- | --- |
-| [![Архів застосунків із пошуком і фільтром обраного](docs/media/konoha-archive.webp)](docs/media/konoha-archive.webp) | [![Панель Шлях ніндзя з налаштуваннями ефектів і звуку](docs/media/konoha-settings.webp)](docs/media/konoha-settings.webp) |
+| [![Головний екран із шістьма обраними застосунками та Стрибком Гамабунти](docs/media/konoha-home.webp)](docs/media/konoha-home.webp) | [![Галерея технік із Расенґаном, Расенсюрикеном і Чідорі](docs/media/konoha-techniques.webp)](docs/media/konoha-techniques.webp) |
 
 | Галерея сцен | Мінігра «Шлях шинобі» |
 | --- | --- |
-| [![Галерея шпалер з виділеною сценою Команда №7](docs/media/konoha-scenes.webp)](docs/media/konoha-scenes.webp) | [![Мінігра Шлях шинобі зі стартовим екраном і вибором героя](docs/media/konoha-game.webp)](docs/media/konoha-game.webp) |
+| [![Галерея шпалер з виділеною сценою Команда №7](docs/media/konoha-scenes.webp)](docs/media/konoha-scenes.webp) | [![Наруто біжить лісовою стежкою в мінігрі Шлях шинобі](docs/media/konoha-game.webp)](docs/media/konoha-game.webp) |
 
 ## Встановлення
 
