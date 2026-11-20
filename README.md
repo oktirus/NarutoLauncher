@@ -86,6 +86,6 @@ adb -s "TV_DEVICE_ID" install -r ".\KonohaNative-1.1.3.apk"
 
 ## Розробка й авторство
 
-Нативний застосунок використовує Android Views і Custom Canvas. [Інструкція зі збірки](native-parity/README.md) · [Повідомити про проблему](https://github.com/oktirus/NarutoLauncher/issues) · [Шаблон README](docs/README-template.md)
+Нативний застосунок використовує Android Views і Custom Canvas. [Інструкція зі збірки](native-parity/README.md) · [Повідомити про проблему](https://github.com/oktirus/NarutoLauncher/issues) · [План розвитку](docs/ROADMAP.md) · [Шаблон README](docs/README-template.md)
 
 Розробник — **Oktirus**. Це фанатський проєкт. Права на оригінальні матеріали Naruto належать їхнім правовласникам. [Ліцензія використаних компонентів CleanYourTV](LICENSE-cleanyourtv)

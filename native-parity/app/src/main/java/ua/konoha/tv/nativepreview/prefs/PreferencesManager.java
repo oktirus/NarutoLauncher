@@ -99,7 +99,7 @@ public class PreferencesManager {
     }
 
     public String getTechnique() {
-        return prefs.getString(KEY_TECHNIQUE, "rasengan");
+        return prefs.getString(KEY_TECHNIQUE, CatalogData.DEFAULT_TECHNIQUE_ID);
     }
 
     public void setTechnique(String technique) {
@@ -240,7 +240,7 @@ public class PreferencesManager {
                 for (Technique tech : CatalogData.TECHNIQUES) {
                     if (tech.getId().equals(t)) { valid = true; break; }
                 }
-                edit.putString(KEY_TECHNIQUE, valid ? t : "rasengan");
+                edit.putString(KEY_TECHNIQUE, valid ? t : CatalogData.DEFAULT_TECHNIQUE_ID);
             }
             if (obj.has("highlightSound") && !obj.isNull("highlightSound")) {
                 String hs = obj.optString("highlightSound", "");

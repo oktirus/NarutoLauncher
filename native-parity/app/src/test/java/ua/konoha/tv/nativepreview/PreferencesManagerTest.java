@@ -106,7 +106,7 @@ public class PreferencesManagerTest {
         Assert.assertEquals(0.45f, pm.getVolume(), 0.001f);
         Assert.assertEquals(0.22f, pm.getMusicVolume(), 0.001f);
         Assert.assertEquals("1584791975", pm.getMusicTrack());
-        Assert.assertEquals("rasengan", pm.getTechnique());
+        Assert.assertEquals("gamabunta", pm.getTechnique());
         Assert.assertEquals("jutsu", pm.getHighlightSound());
         Assert.assertTrue(pm.isMotionEnabled());
         Assert.assertEquals(60, pm.getRotationSeconds());
@@ -123,7 +123,7 @@ public class PreferencesManagerTest {
         previous.setAmbienceEnabled(false);
         previous.setRotationSeconds(0);
         previous.setIdleSeconds(300);
-        previous.setTechnique("gamabunta");
+        previous.setTechnique("rasengan");
         Map<String, ?> before = saved.getAll();
 
         PreferencesManager updated = new PreferencesManager(saved);
@@ -132,7 +132,7 @@ public class PreferencesManagerTest {
         Assert.assertFalse(updated.isAmbienceEnabled());
         Assert.assertEquals(0, updated.getRotationSeconds());
         Assert.assertEquals(300, updated.getIdleSeconds());
-        Assert.assertEquals("gamabunta", updated.getTechnique());
+        Assert.assertEquals("rasengan", updated.getTechnique());
         Assert.assertEquals(before, saved.getAll());
         updated.setIdleSeconds(0);
         Assert.assertEquals("Explicitly disabled idle stays disabled", 0,
@@ -219,7 +219,7 @@ public class PreferencesManagerTest {
         Assert.assertTrue(ok);
         Assert.assertEquals("team7", pm.getScene());
         Assert.assertEquals("1584791975", pm.getMusicTrack());
-        Assert.assertEquals("rasengan", pm.getTechnique());
+        Assert.assertEquals("gamabunta", pm.getTechnique());
         Assert.assertEquals("jutsu", pm.getHighlightSound());
     }
 

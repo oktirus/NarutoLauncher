@@ -5,6 +5,7 @@ import android.graphics.*;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import ua.konoha.tv.nativepreview.model.CatalogData;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -20,7 +21,7 @@ public class ChakraFocusView extends View {
     private final TechniqueRenderer.FrogState frogState = new TechniqueRenderer.FrogState();
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-    private String currentTechnique = "rasengan";
+    private String currentTechnique = CatalogData.DEFAULT_TECHNIQUE_ID;
     private View targetView = null;
     private final RectF targetRect = new RectF();
     private final int[] targetLocation = new int[2];
@@ -122,7 +123,7 @@ public class ChakraFocusView extends View {
     }
 
     public void setTechnique(String technique) {
-        this.currentTechnique = technique != null ? technique : "rasengan";
+        this.currentTechnique = technique != null ? technique : CatalogData.DEFAULT_TECHNIQUE_ID;
         setElevation("gamabunta".equals(this.currentTechnique) ? 20f : 5f);
         startAnimationLoop();
         invalidate();

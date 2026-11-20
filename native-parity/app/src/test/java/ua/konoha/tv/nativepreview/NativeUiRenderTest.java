@@ -56,6 +56,12 @@ public class NativeUiRenderTest {
             NativeLifecycleTest.call(activity, "openTechniques");
             flush(activity, "techniqueRenderer", "decodeExecutor");
             capture(activity, "primary-techniques-order-963", 963, 541);
+            Object techniquesPanel = NativeLifecycleTest.field(activity, "techniquesPanel");
+            GridLayout grid = NativeLifecycleTest.field(techniquesPanel, "grid");
+            ViewGroup firstCard = (ViewGroup) grid.getChildAt(0);
+            assertEquals("Стрибок Гамабунти",
+                    ((android.widget.TextView) firstCard.getChildAt(1)).getText().toString());
+            assertTrue(firstCard.hasFocus());
         } finally { controller.pause().stop().destroy(); }
     }
 

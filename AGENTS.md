@@ -17,7 +17,7 @@
 
 ## Незмінні продуктові вимоги
 
-- При чистому встановленні: motion/audio/ambience увімкнені, rotation 60s, ambient через 900s, техніка rasengan. Перші техніки: rasengan, rasenshuriken. Оновлення не перезаписує explicit saved settings.
+- При чистому встановленні: motion/audio/ambience увімкнені, rotation 60s, ambient через 900s, техніка gamabunta. Перші техніки: gamabunta, rasengan, rasenshuriken. Оновлення не перезаписує explicit saved settings.
 - Cold open та системний HOME вибирають першу app card з ефектом одразу після готовності inventory/layout. Порожнє обране → Archive. Звичайний resume зберігає попередній package identity.
 - Видимий D-pad focus відповідає OK target у Home/library/settings/dropdowns/dialogs/game. Reorder обраного доступний пультом. Сітки/док/підписи адаптивні до physical size **та density**.
 - Галерея технік статична. Motion-off зберігає статичний focus; finite scene crossfade працює незалежно від декоративного frame loop.
