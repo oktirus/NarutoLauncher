@@ -41,6 +41,7 @@ public class SettingsPanel extends FrameLayout {
         void onUpdatesRequested();
         void onRefreshAppsRequested();
         void onAboutRequested();
+        void onResourcesChanged();
         void onCloseRequested();
     }
 
@@ -48,7 +49,9 @@ public class SettingsPanel extends FrameLayout {
     private final AudioController audioController;
     private final SideSheetContainer sheetContainer;
     private final ScrollView scrollView;
-    private final LinearLayout content;
+    private final LinearLayout mainMenu;
+    private LinearLayout content;
+    private View openedGroup;
 
     private TextView techniqueValueText;
     private TextView homeScreenValueText;
@@ -76,15 +79,9 @@ public class SettingsPanel extends FrameLayout {
         scrollView = new ScrollView(context);
         scrollView.setVerticalScrollBarEnabled(false);
 
-        content = new LinearLayout(context);
-        content.setOrientation(LinearLayout.VERTICAL);
-
+        mainMenu = createPage();
         buildSettingsRows(context);
-
-        scrollView.addView(content, new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-        ));
-
+        showPage(mainMenu, "Шлях ніндзя");
         sheetContainer.setBodyView(scrollView);
         addView(sheetContainer, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
     }
@@ -94,29 +91,48 @@ public class SettingsPanel extends FrameLayout {
     }
 
     private void buildSettingsRows(Context context) {
-        // 1. Technique link
+        LinearLayout appearance = createPage();
+        LinearLayout audio = createPage();
+        LinearLayout home = createPage();
+        LinearLayout system = createPage();
+        LinearLayout about = createPage();
+
+        addGroup("Вигляд", appearance);
+        addGroup("Звук і музика", audio);
+        addGroup("Домашній екран", home);
+        addGroup("Система", system);
+        addGroup("Про Коноху та ресурси", about);
+        mainMenu.addView(createNavigationLink("Тиха мить", "Увійти", v -> {
+            if (listener != null) listener.onAmbientRequested();
+        }));
+
         View techRow = createNavigationLink("Техніка навігації", getTechniqueName(prefs.getTechnique()), v -> {
             if (listener != null) listener.onTechniquesRequested();
         });
         techniqueValueText = techRow.findViewById(android.R.id.text2);
-        content.addView(techRow);
+        appearance.addView(techRow);
 
-        // 2. Sound option (Spinner / selector)
-        Spinner soundSpinner = createStyledSpinner(context);
-        setupHighlightSoundSpinner(soundSpinner);
-        content.addView(createSpinnerRow("Звук виділення", "Один спільний звук фокусу для всіх застосунків.", soundSpinner));
-
-        // 3. Motion Switch
         motionSwitch = new KonohaSwitch(context);
-        content.addView(createSwitchRow("Живий світ", "Листя, паралакс, сліди чакри та рухомі печатки.",
+        appearance.addView(createSwitchRow("Живий світ", "Листя, паралакс, сліди чакри та рухомі печатки.",
                 motionSwitch, prefs.isMotionEnabled(), (sw, checked) -> {
                     prefs.setMotionEnabled(checked);
                     audioController.playUiSound();
                 }));
 
-        // 4. Audio Effects Switch
+        Spinner rotSpinner = createStyledSpinner(context);
+        setupRotationSpinner(rotSpinner);
+        appearance.addView(createSpinnerRow("Зміна сцен", "Автоматична ротація 18 шпалер.", rotSpinner));
+
+        Spinner idleSpinner = createStyledSpinner(context);
+        setupIdleSpinner(idleSpinner);
+        appearance.addView(createSpinnerRow("Режим спокою", "Автоматичний перехід у тиху мить.", idleSpinner));
+
+        Spinner soundSpinner = createStyledSpinner(context);
+        setupHighlightSoundSpinner(soundSpinner);
+        audio.addView(createSpinnerRow("Звук виділення", "Один спільний звук фокусу для всіх застосунків.", soundSpinner));
+
         audioSwitch = new KonohaSwitch(context);
-        content.addView(createSwitchRow("Звуки технік", "Чакра, блискавка та печатки з аніме.",
+        audio.addView(createSwitchRow("Звуки технік", "Чакра, блискавка та печатки з аніме.",
                 audioSwitch, prefs.isAudioEnabled(), (sw, checked) -> {
                     prefs.setAudioEnabled(checked);
                     if (!checked) audioController.stopTechniquePreview();
@@ -124,29 +140,42 @@ public class SettingsPanel extends FrameLayout {
                     audioController.playUiSound();
                 }));
 
-        // 5. Music Switch
-        musicSwitch = new KonohaSwitch(context);
-        content.addView(createSwitchRow("Музика Naruto", "Офіційні прев’ю OST замість синтезованого фону.",
-                musicSwitch, prefs.isAmbienceEnabled(), (sw, checked) -> {
-                    prefs.setAmbienceEnabled(checked);
-                    audioController.updateMusic();
-                }));
-
-        // 6. FX Volume
         int currentFx = (int) (prefs.getVolume() * 100);
         View fxVolRow = createSliderRow("Гучність ефектів", "Окремий баланс для цього лаунчера.", currentFx, (sb, val) -> {
             prefs.setVolume(val / 100f);
             if (fxVolumeText != null) fxVolumeText.setText(val + "%");
         });
         fxVolumeText = fxVolRow.findViewById(android.R.id.text2);
-        content.addView(fxVolRow);
+        audio.addView(fxVolRow);
 
-        // 7. Music Track selector
+        audio.addView(createActionButton("Прослухати звук виділення", v -> {
+            audioSwitch.setChecked(true);
+            audioController.stopTechniquePreview();
+            audioController.playFocusSound();
+        }));
+        audio.addView(createActionButton("Використати: " + getTechniqueName(prefs.getTechnique()), v -> {
+            audioSwitch.setChecked(true);
+            audioController.playTechniquePreview(prefs.getTechnique());
+        }));
+
+        musicSwitch = new KonohaSwitch(context);
+        audio.addView(createSwitchRow("Музика Naruto", "Офіційні прев’ю OST замість синтезованого фону.",
+                musicSwitch, prefs.isAmbienceEnabled(), (sw, checked) -> {
+                    prefs.setAmbienceEnabled(checked);
+                    audioController.updateMusic();
+                }));
+
         Spinner musicSpinner = createStyledSpinner(context);
         setupMusicSpinner(musicSpinner);
-        content.addView(createSpinnerRow("Музика", "Оригінальний Naruto OST · MUSASHI PROJECT", musicSpinner));
+        audio.addView(createSpinnerRow("Початковий трек", "Naruto OST · MUSASHI PROJECT", musicSpinner));
+        KonohaSwitch rotationSwitch = new KonohaSwitch(context);
+        audio.addView(createSwitchRow("Автоматично змінювати музику",
+                "Наступний трек починається, поки попередній плавно затихає.",
+                rotationSwitch, prefs.isMusicRotationEnabled(), (sw, checked) -> {
+                    prefs.setMusicRotationEnabled(checked);
+                    audioController.updateMusic();
+                }));
 
-        // 8. Music Volume
         int currentMusicVol = (int) (prefs.getMusicVolume() * 100);
         View musicVolRow = createSliderRow("Гучність музики", "Окремо від звуків навігації.", currentMusicVol, (sb, val) -> {
             prefs.setMusicVolume(val / 100f);
@@ -154,72 +183,78 @@ public class SettingsPanel extends FrameLayout {
             audioController.updateMusic();
         });
         musicVolumeText = musicVolRow.findViewById(android.R.id.text2);
-        content.addView(musicVolRow);
+        audio.addView(musicVolRow);
 
-        // 9. Audio preview buttons
-        content.addView(createActionButton("Прослухати звук виділення", v -> {
-            audioSwitch.setChecked(true);
-            audioController.stopTechniquePreview();
-            audioController.playFocusSound();
-        }));
-        content.addView(createActionButton("Використати: " + getTechniqueName(prefs.getTechnique()), v -> {
-            audioSwitch.setChecked(true);
-            audioController.playTechniquePreview(prefs.getTechnique());
-        }));
-
-        // 10. Rotation & Idle Spinners
-        Spinner rotSpinner = createStyledSpinner(context);
-        setupRotationSpinner(rotSpinner);
-        content.addView(createSpinnerRow("Зміна сцен", "Автоматична ротація 18 шпалер.", rotSpinner));
-
-        Spinner idleSpinner = createStyledSpinner(context);
-        setupIdleSpinner(idleSpinner);
-        content.addView(createSpinnerRow("Режим спокою", "Автоматичний перехід у тиху мить.", idleSpinner));
-
-        // 11. Links & actions
-        View homeRow = createNavigationLink("Домашній екран", "Зробити основним", v -> {
+        View homeRow = createNavigationLink("Основний лаунчер", "Зробити основним", v -> {
             if (listener != null) listener.onHomeScreenRequested();
         });
         homeScreenValueText = homeRow.findViewById(android.R.id.text2);
-        content.addView(homeRow);
+        home.addView(homeRow);
         View redirectRow = createNavigationLink(context.getString(R.string.home_redirect_title),
                 context.getString(R.string.home_redirect_disabled), v -> {
                     if (listener != null) listener.onHomeRedirectRequested();
                 });
         homeRedirectValueText = redirectRow.findViewById(android.R.id.text2);
-        content.addView(redirectRow);
+        home.addView(redirectRow);
+        system.addView(createNavigationLink("Налаштування Android TV", "Система", v -> {
+            if (listener != null) listener.onSystemSettingsRequested("system");
+        }));
+        system.addView(createNavigationLink("Налаштування мережі та Wi-Fi", "Wi-Fi", v -> {
+            if (listener != null) listener.onSystemSettingsRequested("wifi");
+        }));
+        system.addView(createNavigationLink("Оновити архів застосунків", "Пересканувати", v -> {
+            if (listener != null) listener.onRefreshAppsRequested();
+        }));
         String installedVersion = "Перевірити версію";
         try { installedVersion = "v" + context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName; }
         catch (android.content.pm.PackageManager.NameNotFoundException error) {
             android.util.Log.w("KonohaSettings", "Installed version unavailable", error);
         }
-        content.addView(createNavigationLink("Оновлення Конохи", installedVersion, v -> {
+        about.addView(createNavigationLink("Оновлення Конохи", installedVersion, v -> {
             if (listener != null) listener.onUpdatesRequested();
         }));
-        content.addView(createNavigationLink("Увійти в режим спокою", "Тиха мить", v -> {
-            if (listener != null) listener.onAmbientRequested();
-        }));
-        content.addView(createNavigationLink("Налаштування Android TV", "Система", v -> {
-            if (listener != null) listener.onSystemSettingsRequested("system");
-        }));
-        content.addView(createNavigationLink("Налаштування мережі та Wi-Fi", "Wi-Fi", v -> {
-            if (listener != null) listener.onSystemSettingsRequested("wifi");
-        }));
-        content.addView(createNavigationLink("Оновити архів застосунків", "Пересканувати", v -> {
-            if (listener != null) listener.onRefreshAppsRequested();
-        }));
-        content.addView(createNavigationLink("Про Коноху та ресурси", "Довідка", v -> {
+        KonohaSwitch resourcesSwitch = new KonohaSwitch(context);
+        about.addView(createSwitchRow("Показувати CPU та RAM",
+                "Використання ресурсів Конохою на головному екрані.",
+                resourcesSwitch, prefs.shouldShowResources(), (sw, checked) -> {
+                    prefs.setShowResources(checked);
+                    if (listener != null) listener.onResourcesChanged();
+                }));
+        about.addView(createNavigationLink("Про застосунок", "Довідка", v -> {
             if (listener != null) listener.onAboutRequested();
         }));
+    }
 
-        // Footer note
-        TextView note = new TextView(context);
-        note.setText("Усі параметри зберігаються автоматично на пристрої. Керування оптимізовано під стандартний пульт D-pad.");
-        note.setTextColor(Color.parseColor("#8aa2ad"));
-        note.setTextSize(11);
-        note.setTypeface(KonohaTheme.getNunito(context));
-        note.setPadding(0, KonohaTheme.dp(context, 20), 0, KonohaTheme.dp(context, 32));
-        content.addView(note);
+    private LinearLayout createPage() {
+        LinearLayout page = new LinearLayout(getContext());
+        page.setOrientation(LinearLayout.VERTICAL);
+        return page;
+    }
+
+    private void addGroup(String title, LinearLayout page) {
+        mainMenu.addView(createNavigationLink(title, "›", row -> {
+            openedGroup = row;
+            showPage(page, title);
+            focusInitial();
+        }));
+    }
+
+    private void showPage(LinearLayout page, String title) {
+        content = page;
+        sheetContainer.setTitle(title);
+        scrollView.removeAllViews();
+        scrollView.addView(page, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        scrollView.scrollTo(0, 0);
+    }
+
+    public boolean goBack() {
+        if (openedGroup == null) return false;
+        View row = openedGroup;
+        openedGroup = null;
+        showPage(mainMenu, "Шлях ніндзя");
+        focusRow(row);
+        return true;
     }
 
     private View createSettingLabel(String title, String subtitle) {
@@ -568,8 +603,11 @@ public class SettingsPanel extends FrameLayout {
         spinner.setSelection(selectedIndex);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {
-                prefs.setMusicTrack(CatalogData.MUSIC_TRACKS.get(pos).getId());
-                audioController.updateMusic();
+                String selected = CatalogData.MUSIC_TRACKS.get(pos).getId();
+                if (!selected.equals(prefs.getMusicTrack())) {
+                    prefs.setMusicTrack(selected);
+                    audioController.updateMusic();
+                }
             }
             @Override public void onNothingSelected(AdapterView<?> p) {}
         });
@@ -657,13 +695,14 @@ public class SettingsPanel extends FrameLayout {
     }
 
     public void focusInitial() {
+        if (content.getChildCount() > 0) focusRow(content.getChildAt(0));
+    }
+
+    private void focusRow(View row) {
         post(() -> {
-            if (content != null && content.getChildCount() > 0) {
-                View first = content.getChildAt(0);
-                if (first != null) {
-                    first.requestFocusFromTouch();
-                    first.requestFocus();
-                }
+            if (row.getParent() == content && isAttachedToWindow()) {
+                row.requestFocusFromTouch();
+                row.requestFocus();
             }
         });
     }

@@ -72,6 +72,32 @@ public class LauncherRegressionTest {
         assertTrue(field(activity, "activePanel") instanceof SettingsPanel);
     }
 
+    @Test public void aboutGroupsUpdatesAndResourcesAndBackRestoresFocus() throws Exception {
+        MainActivity activity = start();
+        call(activity, "openSettings");
+        layout(activity);
+        SettingsPanel panel = field(activity, "settingsPanel");
+        View about = (View) findText(panel, "Про Коноху та ресурси").getParent();
+        assertTrue(about.performClick());
+        layout(activity);
+        assertNotNull(findText(panel, "Оновлення Конохи"));
+        View label = findText(panel, "Показувати CPU та RAM");
+        KonohaSwitch toggle = findView((View) label.getParent().getParent(), KonohaSwitch.class);
+        PreferencesManager prefs = field(activity, "prefs");
+        View monitor = field(field(activity, "resources"), "label");
+        assertEquals(View.GONE, monitor.getVisibility());
+        toggle.performClick();
+        assertTrue(prefs.shouldShowResources());
+        assertEquals(View.VISIBLE, monitor.getVisibility());
+        toggle.performClick();
+        assertFalse(prefs.shouldShowResources());
+        assertEquals(View.GONE, monitor.getVisibility());
+        activity.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK));
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16));
+        assertSame(about, focused(activity));
+        assertSame(panel, field(activity, "activePanel"));
+    }
+
     @Test public void homeIntentClosesCurrentPanel() throws Exception {
         MainActivity activity = start();
         call(activity, "openGame");
@@ -105,6 +131,32 @@ public class LauncherRegressionTest {
         Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16));
         assertSame(dock.getFirstCard(), focused(activity));
         assertSame(dock.getFirstCard(), field(field(activity, "chakraFocusView"), "targetView"));
+    }
+
+    @Test public void homeRestoresFocusSilentlyUntilDirectionalNavigation() throws Exception {
+        MainActivity activity = start();
+        DockView dock = field(activity, "dockView");
+        ViewGroup cards = (ViewGroup) dock.getFirstCard().getParent();
+        assertTrue(cards.getChildCount() > 2);
+        assertTrue(cards.getChildAt(1).requestFocusFromTouch());
+        controller.pause();
+        AudioController original = field(activity, "audioController");
+        RecordingAudio audio = new RecordingAudio(activity, field(activity, "prefs"));
+        java.lang.reflect.Field audioField = MainActivity.class.getDeclaredField("audioController");
+        audioField.setAccessible(true);
+        audioField.set(activity, audio);
+        original.release();
+
+        controller.newIntent(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME));
+        controller.resume();
+        drain((ExecutorService) field(field(activity, "appManager"), "executor"));
+        layout(activity);
+        assertSame(dock.getFirstCard(), focused(activity));
+        assertEquals("System HOME, layout and resume are silent", 0, audio.focusSounds);
+
+        assertTrue(activity.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT)));
+        assertSame(cards.getChildAt(1), focused(activity));
+        assertEquals("One sound for one actual move", 1, audio.focusSounds);
     }
 
     @Test public void homeWhilePausedFocusesFirstAppAfterResume() throws Exception {
@@ -284,8 +336,8 @@ public class LauncherRegressionTest {
         RecordingAudio audio = new RecordingAudio(activity, prefs);
         try {
             SettingsPanel panel = new SettingsPanel(activity, prefs, audio);
-            LinearLayout content = field(panel, "content");
-            KonohaSwitch toggle = (KonohaSwitch) ((ViewGroup) content.getChildAt(3)).getChildAt(1);
+            openAudioSettings(panel);
+            KonohaSwitch toggle = field(panel, "audioSwitch");
             audio.musicUpdates = 0;
             toggle.performClick();
             assertTrue(prefs.isAudioEnabled());
@@ -305,12 +357,17 @@ public class LauncherRegressionTest {
         RecordingAudio audio = new RecordingAudio(activity, prefs);
         try {
             SettingsPanel panel = new SettingsPanel(activity, prefs, audio);
+            openAudioSettings(panel);
             findText(panel, "Використати:").performClick();
             assertTrue("Explicit preview enables audio like Chromium", prefs.isAudioEnabled());
             assertEquals("chidori", audio.previewTechnique);
             KonohaSwitch toggle = field(panel, "audioSwitch");
             assertTrue(toggle.isChecked());
         } finally { audio.release(); }
+    }
+
+    private static void openAudioSettings(SettingsPanel panel) {
+        assertTrue(((View) findText(panel, "Звук і музика").getParent()).performClick());
     }
 
     @Test public void libraryFocusTargetsAnAuraAroundTheCard() throws Exception {
@@ -453,10 +510,12 @@ public class LauncherRegressionTest {
 
     private static class RecordingAudio extends AudioController {
         int musicUpdates;
+        int focusSounds;
         String previewTechnique;
         RecordingAudio(Context context, PreferencesManager prefs) { super(context, prefs); }
         @Override public synchronized void updateMusic() { musicUpdates++; }
         @Override public synchronized void playUiSound() {}
+        @Override public synchronized void playFocusSound() { focusSounds++; }
         public synchronized boolean playTechniquePreview(String id) { previewTechnique = id; return true; }
     }
 

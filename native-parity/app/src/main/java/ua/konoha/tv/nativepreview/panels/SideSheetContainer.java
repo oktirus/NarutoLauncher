@@ -157,6 +157,10 @@ public class SideSheetContainer extends FrameLayout {
         this.closeListener = listener;
     }
 
+    public void setTitle(String title) {
+        titleView.setText(title);
+    }
+
     public void setBodyView(View view) {
         bodyContainer.removeAllViews();
         if (view != null) {

@@ -71,20 +71,28 @@ public class LauncherDisplayRegressionTest {
         call(activity, "openSettings");
         layout(activity);
         SettingsPanel panel = field(activity, "settingsPanel");
-        ViewGroup content = field(panel, "content");
-        View otherFocus = content.getChildAt(0);
+        ViewGroup groups = field(panel, "content");
+        ua.konoha.tv.nativepreview.panels.SideSheetContainer sheet = field(panel, "sheetContainer");
         int checked = 0;
-        for (int i = 0; i < content.getChildCount(); i++) {
-            View row = content.getChildAt(i);
-            View control = findControl(row);
-            if (control == null) continue;
-            assertTrue(otherFocus.requestFocusFromTouch());
-            int normal = rowPixel(row);
-            assertTrue(control.requestFocusFromTouch());
-            assertNotEquals("Visible row focus for " + control.getClass().getSimpleName(), normal, rowPixel(row));
-            checked++;
+        for (int groupIndex : new int[]{0, 1, 4}) {
+            assertTrue(groups.getChildAt(groupIndex).performClick());
+            layout(activity);
+            ViewGroup content = field(panel, "content");
+            for (int i = 0; i < content.getChildCount(); i++) {
+                View row = content.getChildAt(i);
+                View control = findControl(row);
+                if (control == null) continue;
+                assertTrue(sheet.getCloseButton().requestFocusFromTouch());
+                int normal = rowPixel(row);
+                assertTrue(control.requestFocusFromTouch());
+                assertNotEquals("Visible row focus for " + control.getClass().getSimpleName(), normal, rowPixel(row));
+                checked++;
+            }
+            capture(activity, "settings-group-" + groupIndex + "-963");
+            assertTrue(panel.goBack());
+            layout(activity);
         }
-        assertEquals("Three toggles, two sliders, four selectors", 9, checked);
+        assertEquals("Five toggles, two sliders, four selectors", 11, checked);
         capture(activity, "settings-focus-963");
     }
 
@@ -92,8 +100,10 @@ public class LauncherDisplayRegressionTest {
         MainActivity activity = start();
         call(activity, "openSettings");
         SettingsPanel panel = field(activity, "settingsPanel");
+        ViewGroup groups = field(panel, "content");
+        assertTrue(groups.getChildAt(1).performClick());
         ViewGroup content = field(panel, "content");
-        Spinner spinner = (Spinner) findControl(content.getChildAt(1));
+        Spinner spinner = (Spinner) findControl(content.getChildAt(0));
         View item = spinner.getAdapter().getDropDownView(0, null, content);
         item.measure(View.MeasureSpec.makeMeasureSpec(300, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(200, View.MeasureSpec.AT_MOST));
@@ -127,6 +137,23 @@ public class LauncherDisplayRegressionTest {
                     + label.getHeight() + ", text=" + label.getLayout().getHeight()
                     + ", button=" + button.getHeight() + ", hero=" + parent.getHeight(),
                     label.getHeight() >= label.getLayout().getHeight());
+            if ("jiraiya".equals(scene.getId())) {
+                View dock = field(activity, "dockView");
+                ViewGroup heading = (ViewGroup) ((ViewGroup) dock.getParent()).getChildAt(0);
+                int[] labelPosition = new int[2];
+                int[] titlePosition = new int[2];
+                int[] buttonPosition = new int[2];
+                label.getLocationInWindow(labelPosition);
+                heading.getChildAt(1).getLocationInWindow(titlePosition);
+                button.getLocationInWindow(buttonPosition);
+                assertEquals("Wallpaper name and scroll heading share the same text axis",
+                        labelPosition[0], titlePosition[0]);
+                int[] headingPosition = new int[2];
+                heading.getLocationInWindow(headingPosition);
+                assertEquals("Spacing below the wallpaper pill",
+                        8, headingPosition[1] - (buttonPosition[1] + button.getHeight()));
+                capture(activity, "wallpaper-alignment-jiraiya-963");
+            }
         }
         capture(activity, "wallpaper-caption-963");
     }

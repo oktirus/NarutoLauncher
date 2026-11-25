@@ -161,6 +161,8 @@ public class HomeScreenSetupTest {
             SettingsPanel panel = new SettingsPanel(activity, prefs, audio);
             View row = findText(panel, "Домашній екран");
             assertNotNull(row);
+            assertTrue(((View) row.getParent()).performClick());
+            row = findText(panel, "Основний лаунчер");
             panel.setHomeScreenActive(true);
             assertNotNull(findText(panel, "Коноха · вибрано"));
             panel.setHomeScreenActive(false);
@@ -174,6 +176,7 @@ public class HomeScreenSetupTest {
                 public void onSystemSettingsRequested(String target) {}
                 public void onRefreshAppsRequested() {}
                 public void onAboutRequested() {}
+                public void onResourcesChanged() {}
                 public void onCloseRequested() {}
             });
             ((View) row.getParent()).performClick();

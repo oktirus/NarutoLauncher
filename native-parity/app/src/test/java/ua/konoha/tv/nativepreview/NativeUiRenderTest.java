@@ -97,6 +97,9 @@ public class NativeUiRenderTest {
             NativeLifecycleTest.call(activity, "openSettings");
             layout(activity, 963, 541);
             ua.konoha.tv.nativepreview.panels.SettingsPanel panel = NativeLifecycleTest.field(activity, "settingsPanel");
+            android.view.ViewGroup groupRows = NativeLifecycleTest.field(panel, "content");
+            assertTrue(groupRows.getChildAt(2).performClick());
+            layout(activity, 963, 541);
             android.widget.TextView value = NativeLifecycleTest.field(panel, "homeScreenValueText");
             View row = (View) value.getParent();
             assertTrue(row.requestFocusFromTouch());

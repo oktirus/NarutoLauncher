@@ -52,6 +52,7 @@ public class MainActivity extends Activity {
     // UI elements
     private TextView timeView;
     private TextView dateView;
+    private LauncherResourceMonitor resources;
     private HeroTitleView heroTitleView;
     private TextView heroDescView;
     private TextView quoteAuthorView;
@@ -320,8 +321,8 @@ public class MainActivity extends Activity {
     private LinearLayout createHeroSection() {
         LinearLayout hero = new LinearLayout(this);
         hero.setOrientation(LinearLayout.VERTICAL);
-        hero.setGravity(Gravity.CENTER_VERTICAL);
-        hero.setPadding(0, 0, 0, 0);
+        hero.setGravity(Gravity.BOTTOM);
+        hero.setPadding(0, 0, 0, dp(8));
 
         // Keep the caption and selector at their natural height on shorter TV viewports.
         LinearLayout copy = new LinearLayout(this);
@@ -367,7 +368,7 @@ public class MainActivity extends Activity {
         LinearLayout heading = new LinearLayout(this);
         heading.setOrientation(LinearLayout.HORIZONTAL);
         heading.setGravity(Gravity.CENTER_VERTICAL);
-        heading.setPadding(0, 0, 0, dp(4));
+        heading.setPaddingRelative(dp(9), 0, 0, dp(4));
 
         // Tiny seal 忍 badge (.tiny-seal)
         TextView sealBadge = new TextView(this);
@@ -385,7 +386,8 @@ public class MainActivity extends Activity {
         int sealW = dp(18);
         int sealH = dp(20);
         LinearLayout.LayoutParams sealLp = new LinearLayout.LayoutParams(sealW, sealH);
-        sealLp.setMargins(0, 0, dp(8), 0);
+        int labelStart = sceneChoiceBtn.getPaddingStart() + dp(16) + dp(8);
+        sealLp.setMarginEnd(labelStart - heading.getPaddingStart() - sealW);
         heading.addView(sealBadge, sealLp);
 
         TextView title = new TextView(this);
@@ -417,7 +419,6 @@ public class MainActivity extends Activity {
                 lastFocusedPackage = app != null ? app.getPackageName() : null;
                 lastFocusedIsLibrary = false;
                 chakraFocusView.setTargetView(view);
-                audioController.playFocusSound();
                 resetIdleTimer();
             }
             @Override public void onLibraryFocused(View view) {
@@ -426,7 +427,6 @@ public class MainActivity extends Activity {
                 lastFocusedPackage = null;
                 lastFocusedIsLibrary = true;
                 chakraFocusView.setTargetView(view);
-                audioController.playFocusSound();
                 resetIdleTimer();
             }
             @Override public void onDockFocusCleared() {
@@ -450,6 +450,16 @@ public class MainActivity extends Activity {
         guide.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
         guide.setTypeface(KonohaTheme.getNunito(this));
         footer.addView(guide, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+        TextView resourceStats = new TextView(this);
+        resourceStats.setTextColor(KonohaTheme.COLOR_PAPER);
+        resourceStats.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+        resourceStats.setTypeface(KonohaTheme.getNunito(this));
+        resourceStats.setSingleLine(true);
+        resourceStats.setPaddingRelative(dp(8), 0, dp(12), 0);
+        resourceStats.setVisibility(View.GONE);
+        footer.addView(resourceStats);
+        resources = new LauncherResourceMonitor(resourceStats, mainHandler);
 
         TextView tag = new TextView(this);
         tag.setText("Коноха · Воля вогню");
@@ -783,6 +793,7 @@ public class MainActivity extends Activity {
                     });
                 }
                 @Override public void onAboutRequested() { showAboutDialog(); }
+                @Override public void onResourcesChanged() { updateResourceDisplay(); }
                 @Override public void onCloseRequested() { closeActivePanel(); }
             });
         }
@@ -797,6 +808,11 @@ public class MainActivity extends Activity {
         if (settingsPanel == null) return;
         settingsPanel.setHomeScreenActive(homeScreenSetup.isDefaultHome());
         settingsPanel.setHomeRedirectEnabled(HomeRedirectService.isEnabled(this));
+    }
+
+    private void updateResourceDisplay() {
+        resources.setActive(activityResumed && mainShell.getVisibility() == View.VISIBLE
+                && prefs.shouldShowResources());
     }
 
     private void openGame() {
@@ -962,6 +978,7 @@ public class MainActivity extends Activity {
         chakraFocusView.setTargetView(null);
         ambientOverlay.start();
         mainShell.setVisibility(View.INVISIBLE);
+        updateResourceDisplay();
         mainShell.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
         backgroundView.setDecorPaused(true);
         audioController.playUiSound();
@@ -970,6 +987,7 @@ public class MainActivity extends Activity {
     private void exitAmbient() {
         ambientOverlay.stop();
         mainShell.setVisibility(View.VISIBLE);
+        updateResourceDisplay();
         mainShell.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
         backgroundView.setDecorPaused(false);
         resetIdleTimer();
@@ -1057,7 +1075,7 @@ public class MainActivity extends Activity {
                     return true;
                 }
                 if (activePanel != null) {
-                    closeActivePanel();
+                    if (activePanel != settingsPanel || !settingsPanel.goBack()) closeActivePanel();
                     return true;
                 }
                 if (brandBtn != null) {
@@ -1083,7 +1101,35 @@ public class MainActivity extends Activity {
             }
         }
 
-        return super.dispatchKeyEvent(event);
+        if (event.getAction() != KeyEvent.ACTION_DOWN || !activityResumed || activePanel != null
+                || ambientOverlay.getVisibility() == View.VISIBLE) {
+            return super.dispatchKeyEvent(event);
+        }
+        final int direction;
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_DPAD_LEFT: direction = View.FOCUS_LEFT; break;
+            case KeyEvent.KEYCODE_DPAD_RIGHT: direction = View.FOCUS_RIGHT; break;
+            case KeyEvent.KEYCODE_DPAD_UP: direction = View.FOCUS_UP; break;
+            case KeyEvent.KEYCODE_DPAD_DOWN: direction = View.FOCUS_DOWN; break;
+            default: return super.dispatchKeyEvent(event);
+        }
+
+        // Home intents, layout and inventory refresh can all change focus without navigation input.
+        View before = rootLayout.findFocus();
+        boolean handled = super.dispatchKeyEvent(event);
+        View after = rootLayout.findFocus();
+        if (!handled && before != null && after == before) {
+            View next = before.focusSearch(direction);
+            if (next != before && isInside(next, dockView) && next.requestFocus(direction)) {
+                after = next;
+                handled = true;
+            }
+        }
+        if (after != before && isInside(after, dockView)) {
+            focusFirstAppOnHomeEntry = false;
+            audioController.playFocusSound();
+        }
+        return handled;
     }
 
     @Override
@@ -1136,6 +1182,7 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         activityResumed = true;
+        updateResourceDisplay();
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_FULLSCREEN
                         | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
@@ -1188,6 +1235,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         activityResumed = false;
+        updateResourceDisplay();
         TVKeyHelper.cancelPendingPress(getWindow().getDecorView().findFocus());
         closeContextMenu(false);
         mainHandler.removeCallbacks(updateCheckRunnable);
@@ -1225,6 +1273,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         closeContextMenu(false);
+        resources.close();
         mainHandler.removeCallbacksAndMessages(null);
         if (focusChangeListener != null && rootLayout != null && rootLayout.getViewTreeObserver().isAlive()) {
             rootLayout.getViewTreeObserver().removeOnGlobalFocusChangeListener(focusChangeListener);

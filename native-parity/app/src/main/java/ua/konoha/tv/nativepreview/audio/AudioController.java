@@ -38,6 +38,9 @@ public class AudioController {
     private MusicState overlapState = MusicState.STOPPED;
     private MediaPlayer pendingMusicPlayer;
     private String currentMusicTrackId = null;
+    private String musicSelection;
+    private boolean rotateMusic;
+    private float musicVolumeFactor = 1f;
     private boolean isMusicPaused = false;
     private long musicGeneration = 0;
     private Runnable loopScheduleRunnable = null;
@@ -132,14 +135,28 @@ public class AudioController {
 
         if (isMusicPaused) return;
 
-        String trackId = prefs.getMusicTrack();
+        String selectedTrack = prefs.getMusicTrack();
+        boolean rotationEnabled = prefs.isMusicRotationEnabled();
+        boolean playlistChanged = rotationEnabled != rotateMusic;
+        boolean selectionChanged = !selectedTrack.equals(musicSelection);
+        String trackId = selectionChanged || !rotationEnabled || currentMusicTrackId == null
+                ? selectedTrack : currentMusicTrackId;
+        musicSelection = selectedTrack;
+        rotateMusic = rotationEnabled;
         float targetVol = prefs.getMusicVolume();
 
         if (musicPlayer != null && musicState != MusicState.ERROR && trackId.equals(currentMusicTrackId)) {
             if (musicState == MusicState.PLAYING) {
-                try {
-                    musicPlayer.setVolume(targetVol, targetVol);
-                } catch (Exception ignored) {}
+                if (!fadeCallbacks.containsKey(musicPlayer)) {
+                    try {
+                        musicPlayer.setVolume(targetVol, targetVol);
+                    } catch (Exception ignored) {}
+                }
+                if (playlistChanged) {
+                    safeReleasePlayer(pendingMusicPlayer);
+                    pendingMusicPlayer = null;
+                    scheduleLoopOverlap(musicPlayer, musicGeneration);
+                }
             } else if (musicState == MusicState.PAUSED && !isMusicPaused) {
                 resumeMusic();
             }
@@ -156,15 +173,15 @@ public class AudioController {
             overlapState = MusicState.PLAYING;
             musicPlayer = null;
             musicState = MusicState.IDLE;
-            startFadeOut(overlapPlayer, 1200);
+            startFadeOut(overlapPlayer, 1200, musicVolumeFactor);
         } else {
             stopMusic();
         }
 
-        startTrack(trackId, targetVol, true);
+        startTrack(trackId);
     }
 
-    private void startTrack(String trackId, float targetVol, boolean fadeIn) {
+    private void startTrack(String trackId) {
         if (loopScheduleRunnable != null) {
             mainHandler.removeCallbacks(loopScheduleRunnable);
             loopScheduleRunnable = null;
@@ -207,12 +224,7 @@ public class AudioController {
                     try {
                         player.start();
                         musicState = MusicState.PLAYING;
-                        if (fadeIn) {
-                            startFadeIn(player, currentGen, 1200);
-                        } else {
-                            float v = prefs.getMusicVolume();
-                            player.setVolume(v, v);
-                        }
+                        startFadeIn(player, currentGen, 1200);
                         scheduleLoopOverlap(player, currentGen);
                     } catch (Exception e) {
                         if (loopScheduleRunnable != null) {
@@ -245,16 +257,7 @@ public class AudioController {
 
             playerInstance.setOnCompletionListener(player -> {
                 synchronized (AudioController.this) {
-                    if (currentGen == musicGeneration && player == musicPlayer) {
-                        if (loopScheduleRunnable != null) {
-                            mainHandler.removeCallbacks(loopScheduleRunnable);
-                            loopScheduleRunnable = null;
-                        }
-                        safeReleasePlayer(player);
-                        musicPlayer = null;
-                        musicState = MusicState.IDLE;
-                        updateMusic();
-                    }
+                    finishMusicTrack(player, currentGen);
                 }
             });
 
@@ -291,11 +294,36 @@ public class AudioController {
                     if (gen != musicGeneration || mp != musicPlayer || musicState != MusicState.PLAYING || isMusicPaused) {
                         return;
                     }
-                    triggerLoopOverlap(currentMusicTrackId, fadeMs, gen);
+                    triggerLoopOverlap(followingTrack(), fadeMs, gen);
                 }
             };
             mainHandler.postDelayed(loopScheduleRunnable, delay);
         } catch (Exception ignored) {}
+    }
+
+    private String followingTrack() {
+        if (!rotateMusic) return currentMusicTrackId;
+        for (int i = 0; i < CatalogData.MUSIC_TRACKS.size(); i++) {
+            if (CatalogData.MUSIC_TRACKS.get(i).getId().equals(currentMusicTrackId)) {
+                return CatalogData.MUSIC_TRACKS.get((i + 1) % CatalogData.MUSIC_TRACKS.size()).getId();
+            }
+        }
+        return musicSelection;
+    }
+
+    private void finishMusicTrack(MediaPlayer player, long gen) {
+        if (gen != musicGeneration || player != musicPlayer) return;
+        String nextTrack = followingTrack();
+        if (loopScheduleRunnable != null) {
+            mainHandler.removeCallbacks(loopScheduleRunnable);
+            loopScheduleRunnable = null;
+        }
+        safeReleasePlayer(player);
+        musicPlayer = null;
+        musicState = MusicState.IDLE;
+        if (!disposed && !isMusicPaused && prefs.isAudioEnabled() && prefs.isAmbienceEnabled()) {
+            startTrack(nextTrack);
+        }
     }
 
     private void triggerLoopOverlap(String trackId, int fadeMs, long parentGen) {
@@ -331,15 +359,18 @@ public class AudioController {
                     }
                     pendingMusicPlayer = null;
                     try {
+                        int remaining = musicPlayer.getDuration() - musicPlayer.getCurrentPosition();
+                        int transitionMs = Math.max(180, Math.min(fadeMs, remaining));
                         player.start();
                         safeReleasePlayer(overlapPlayer);
                         overlapPlayer = musicPlayer;
                         overlapState = MusicState.PLAYING;
-                        startFadeOut(overlapPlayer, fadeMs);
+                        startFadeOut(overlapPlayer, transitionMs, musicVolumeFactor);
 
                         musicPlayer = player;
+                        currentMusicTrackId = trackId;
                         musicState = MusicState.PLAYING;
-                        startFadeIn(player, parentGen, fadeMs);
+                        startFadeIn(player, parentGen, transitionMs);
                         scheduleLoopOverlap(player, parentGen);
                     } catch (Exception e) {
                         safeReleasePlayer(player);
@@ -383,14 +414,7 @@ public class AudioController {
                 synchronized (AudioController.this) {
                     if (parentGen == musicGeneration) {
                         if (player == musicPlayer) {
-                            if (loopScheduleRunnable != null) {
-                                mainHandler.removeCallbacks(loopScheduleRunnable);
-                                loopScheduleRunnable = null;
-                            }
-                            safeReleasePlayer(player);
-                            musicPlayer = null;
-                            musicState = MusicState.IDLE;
-                            updateMusic();
+                            finishMusicTrack(player, parentGen);
                         } else if (player == overlapPlayer) {
                             safeReleasePlayer(player);
                             overlapPlayer = null;
@@ -411,18 +435,18 @@ public class AudioController {
 
     private void startFadeIn(MediaPlayer mp, long gen, int durationMs) {
         cancelFades(mp);
+        musicVolumeFactor = 0f;
         java.util.List<Runnable> jobs = new java.util.ArrayList<>();
         fadeCallbacks.put(mp, jobs);
-        final int steps = 8;
-        final long interval = Math.max(20, durationMs / steps);
+        final int steps = Math.max(8, durationMs / 80);
         for (int i = 1; i <= steps; i++) {
             final float factor = (float) i / steps;
             final boolean last = i == steps;
             Runnable job = () -> {
                 synchronized (AudioController.this) {
                     if (!disposed && ownedPlayers.contains(mp) && gen == musicGeneration && !isMusicPaused && mp == musicPlayer && musicState == MusicState.PLAYING) {
-                        float currentDesired = prefs.getMusicVolume();
-                        float v = currentDesired * factor;
+                        musicVolumeFactor = factor;
+                        float v = prefs.getMusicVolume() * factor;
                         try { mp.setVolume(v, v); } catch (Exception ignored) {}
                     }
                     if (last && fadeCallbacks.get(mp) == jobs) fadeCallbacks.remove(mp);
@@ -433,15 +457,14 @@ public class AudioController {
         }
     }
 
-    private void startFadeOut(MediaPlayer mp, int durationMs) {
+    private void startFadeOut(MediaPlayer mp, int durationMs, float initialFactor) {
         if (mp == null) return;
         cancelFades(mp);
         java.util.List<Runnable> jobs = new java.util.ArrayList<>();
         fadeCallbacks.put(mp, jobs);
-        final int steps = 8;
-        final long interval = Math.max(20, durationMs / steps);
+        final int steps = Math.max(8, durationMs / 80);
         for (int i = 1; i <= steps; i++) {
-            final float factor = 1.0f - ((float) i / steps);
+            final float factor = initialFactor * (1f - (float) i / steps);
             final boolean isLast = (i == steps);
             Runnable job = () -> {
                 synchronized (AudioController.this) {
@@ -504,10 +527,16 @@ public class AudioController {
             return;
         }
 
+        if (!prefs.getMusicTrack().equals(musicSelection) || prefs.isMusicRotationEnabled() != rotateMusic) {
+            updateMusic();
+            return;
+        }
+
         if (musicState == MusicState.PAUSED && musicPlayer != null) {
             try {
                 musicPlayer.start();
                 musicState = MusicState.PLAYING;
+                musicVolumeFactor = 1f;
                 float vol = prefs.getMusicVolume();
                 musicPlayer.setVolume(vol, vol);
                 scheduleLoopOverlap(musicPlayer, musicGeneration);
