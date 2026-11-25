@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/oktirus/NarutoLauncher/releases/download/v1.1.5/KonohaNative-1.1.5.apk"><strong>Завантажити APK 1.1.5</strong></a>
+  <a href="https://github.com/oktirus/NarutoLauncher/releases/download/v1.1.6/KonohaNative-1.1.6.apk"><strong>Завантажити APK 1.1.6</strong></a>
   · <a href="https://github.com/oktirus/NarutoLauncher/releases/latest">Останній реліз</a>
   · <a href="#встановлення">Встановлення</a>
   · <a href="#кнопка-home">Кнопка Home</a>
@@ -54,7 +54,7 @@ https://github.com/user-attachments/assets/30e8571c-037a-4ab1-beed-c613dc52b6a9
 
 ```powershell
 adb devices -l
-adb -s "TV_DEVICE_ID" install -r ".\KonohaNative-1.1.5.apk"
+adb -s "TV_DEVICE_ID" install -r ".\KonohaNative-1.1.6.apk"
 ```
 
 Параметр `-r` оновлює сумісну версію з тим самим підписом і зберігає її дані. [Документація ADB](https://developer.android.com/tools/adb)

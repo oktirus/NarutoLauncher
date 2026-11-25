@@ -52,6 +52,7 @@ public class MainActivity extends Activity {
     // UI elements
     private TextView timeView;
     private TextView dateView;
+    private TextView updateNotice;
     private LauncherResourceMonitor resources;
     private HeroTitleView heroTitleView;
     private TextView heroDescView;
@@ -77,8 +78,12 @@ public class MainActivity extends Activity {
     private boolean lastFocusedIsLibrary = false;
     private boolean activityResumed;
     private UpdateController updateController;
-    private final Runnable updateCheckRunnable = () -> {
-        if (updateController != null) updateController.checkAutomatically();
+    private final Runnable updateCheckRunnable = new Runnable() {
+        @Override public void run() {
+            if (!activityResumed) return;
+            updateController.checkAutomatically();
+            mainHandler.postDelayed(this, 60_000L);
+        }
     };
     private boolean appInventoryReady;
     private boolean focusFirstAppOnHomeEntry = true;
@@ -123,12 +128,13 @@ public class MainActivity extends Activity {
                 && activePanel == null && ambientOverlay != null && ambientOverlay.getVisibility() != View.VISIBLE
                 && !isContextMenuOpen()
                 && !homeScreenSetup.isPromptShowing() && !audioController.isLaunching()
-                && !updateController.isShowing());
+                && !updateController.isShowing(), this::showAvailableUpdate);
         audioController = new AudioController(this, prefs);
         techniqueRenderer = new TechniqueRenderer(this);
 
         // 2. Створення верстки
         buildLayout();
+        updateController.restoreAvailability();
 
         // 3. Завантаження початкового стану
         applyScene(prefs.getScene(), false);
@@ -274,6 +280,17 @@ public class MainActivity extends Activity {
         topStatus.setOrientation(LinearLayout.HORIZONTAL);
         topStatus.setGravity(Gravity.CENTER_VERTICAL);
 
+        updateNotice = new TextView(this);
+        updateNotice.setTextColor(KonohaTheme.COLOR_ORANGE);
+        updateNotice.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+        updateNotice.setTypeface(KonohaTheme.getNunitoBold(this));
+        updateNotice.setSingleLine(true);
+        updateNotice.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        updateNotice.setMaxWidth(dp(130));
+        updateNotice.setPaddingRelative(0, 0, dp(12), 0);
+        updateNotice.setVisibility(View.GONE);
+        topStatus.addView(updateNotice);
+
         LinearLayout clockLayout = new LinearLayout(this);
         clockLayout.setOrientation(LinearLayout.VERTICAL);
         clockLayout.setGravity(Gravity.END);
@@ -316,6 +333,11 @@ public class MainActivity extends Activity {
 
         bar.addView(topStatus);
         return bar;
+    }
+
+    private void showAvailableUpdate(String versionName) {
+        updateNotice.setText(versionName == null ? null : "Нова версія " + versionName);
+        updateNotice.setVisibility(versionName == null ? View.GONE : View.VISIBLE);
     }
 
     private LinearLayout createHeroSection() {
@@ -686,6 +708,7 @@ public class MainActivity extends Activity {
             resetIdleTimer();
             wireSpatialNavigation();
             restoreHomeFocus();
+            updateController.onHomeAvailable();
         }
     }
 
@@ -817,9 +840,10 @@ public class MainActivity extends Activity {
 
     private void openGame() {
         if (runnerGameView == null) {
+            audioController.prepareRunnerSounds();
             runnerGameView = new RunnerGameView(this, prefs);
             runnerGameView.setOnExitListener(this::closeActivePanel);
-            runnerGameView.setOnSoundListener(audioController::playUiSound);
+            runnerGameView.setSoundCallbacks(audioController::playRunnerSound, audioController::stopRunnerSounds);
         }
         showPanel(runnerGameView);
         runnerGameView.onResumeLifecycle();
@@ -981,7 +1005,6 @@ public class MainActivity extends Activity {
         updateResourceDisplay();
         mainShell.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
         backgroundView.setDecorPaused(true);
-        audioController.playUiSound();
     }
 
     private void exitAmbient() {
@@ -992,6 +1015,7 @@ public class MainActivity extends Activity {
         backgroundView.setDecorPaused(false);
         resetIdleTimer();
         restoreHomeFocus();
+        updateController.onHomeAvailable();
     }
 
     // Таймери ротації та спокою
@@ -1068,6 +1092,7 @@ public class MainActivity extends Activity {
             if (back) {
                 if (audioController.cancelPendingLaunch()) {
                     toastOverlay.hide();
+                    updateController.onHomeAvailable();
                     return true;
                 }
                 if (ambientOverlay.getVisibility() == View.VISIBLE) {
@@ -1148,6 +1173,7 @@ public class MainActivity extends Activity {
             if (ambientOverlay.getVisibility() == View.VISIBLE) exitAmbient();
             closeActivePanel();
             restoreHomeFocus();
+            updateController.onHomeAvailable();
         }
     }
 
@@ -1163,6 +1189,7 @@ public class MainActivity extends Activity {
                 && (ambientOverlay == null || ambientOverlay.getVisibility() != View.VISIBLE)) {
             restoreHomeFocus();
             homeScreenSetup.showFirstRunPrompt();
+            updateController.onHomeAvailable();
         }
     }
 
@@ -1226,8 +1253,9 @@ public class MainActivity extends Activity {
         homeScreenSetup.onResume();
         updateHomeSettingsStatus();
         updateController.onResume();
+        updateController.onHomeAvailable();
         mainHandler.removeCallbacks(updateCheckRunnable);
-        mainHandler.postDelayed(updateCheckRunnable, 30000);
+        mainHandler.postDelayed(updateCheckRunnable, 3000);
         setupTimers();
         resetIdleTimer();
     }

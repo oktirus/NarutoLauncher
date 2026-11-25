@@ -158,6 +158,39 @@ public class LauncherDisplayRegressionTest {
         capture(activity, "wallpaper-caption-963");
     }
 
+    @Test public void runnerStageAndControlsStayAlignedAtWideAndNarrowSizes() throws Exception {
+        MainActivity activity = start();
+        call(activity, "openGame");
+        ua.konoha.tv.nativepreview.views.RunnerGameView game = field(activity, "runnerGameView");
+        drain((ExecutorService) field(game, "bitmapExecutor"));
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        for (int width : new int[]{963, 400}) {
+            int height = width == 963 ? 541 : 320;
+            game.layout(0, 0, width, height);
+            android.graphics.RectF stage = field(game, "stageRect");
+            android.graphics.RectF hero = field(game, "gamabuntaTab");
+            android.graphics.RectF pause = field(game, "pauseButton");
+            android.graphics.RectF close = field(game, "closeButton");
+            android.graphics.RectF jump = field(game, "jumpButton");
+            assertTrue(hero.right < pause.left);
+            assertEquals(close.right, pause.right, 0.01f);
+            assertEquals(pause.right, jump.right, 0.01f);
+            assertTrue(stage.top >= pause.bottom);
+            assertTrue(stage.bottom < jump.top);
+            assertEquals(width / 2f, stage.centerX(), 0.01f);
+            game.startGame();
+            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            game.draw(new Canvas(bitmap));
+            File dir = new File("build/reports/native-ui");
+            assertTrue(dir.isDirectory() || dir.mkdirs());
+            try (FileOutputStream stream = new FileOutputStream(new File(dir, "runner-trail-" + width + ".png"))) {
+                assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream));
+            } finally {
+                bitmap.recycle();
+            }
+        }
+    }
+
     private static View findControl(View view) {
         if (view instanceof KonohaSwitch || view instanceof KonohaSeekBar || view instanceof Spinner) return view;
         if (view instanceof ViewGroup) {

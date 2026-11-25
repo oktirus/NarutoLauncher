@@ -5,77 +5,142 @@ import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.widget.Toast;
 import java.io.File;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /** All UI state is main-thread confined; each worker request has its own cancellation token. */
 public final class UpdateController {
+    private static final String LAST_SUCCESS = "last_successful_check";
+    private static final String AVAILABLE_CODE = "available_code";
+    private static final String AVAILABLE_NAME = "available_name";
+    private static final long CHECK_INTERVAL_MS = 30 * 60 * 1000L;
+    private static final long RETRY_INTERVAL_MS = 5 * 60 * 1000L;
     private final Activity activity;
     private final BooleanSupplier canPrompt;
     private final Supplier<GitHubReleaseClient> clients;
+    private final Consumer<String> onAvailability;
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final android.content.SharedPreferences state;
     private GitHubReleaseClient request;
     private AlertDialog dialog;
     private ReleaseUpdate readyUpdate;
+    private ReleaseUpdate pendingUpdate;
+    private long autoOfferedCode;
+    private long lastFailureElapsed = -1L;
+    private final Runnable offerPending = this::offerPendingUpdate;
     private File readyApk;
     private boolean waitingForPermission;
     private boolean closed;
     private boolean busy;
+    private boolean silentCheck;
     private long generation;
 
-    public UpdateController(Activity activity, BooleanSupplier canPrompt) {
-        this(activity, canPrompt, GitHubReleaseClient::new);
+    public UpdateController(Activity activity, BooleanSupplier canPrompt, Consumer<String> onAvailability) {
+        this(activity, canPrompt, onAvailability, GitHubReleaseClient::new);
     }
 
     UpdateController(Activity activity, BooleanSupplier canPrompt, Supplier<GitHubReleaseClient> clients) {
+        this(activity, canPrompt, ignored -> {}, clients);
+    }
+
+    UpdateController(Activity activity, BooleanSupplier canPrompt, Consumer<String> onAvailability,
+                     Supplier<GitHubReleaseClient> clients) {
         this.activity = activity;
         this.canPrompt = canPrompt;
+        this.onAvailability = onAvailability;
         this.clients = clients;
         state = activity.getSharedPreferences("launcher_updates", Context.MODE_PRIVATE);
     }
 
     public boolean isShowing() { return dialog != null && dialog.isShowing(); }
 
+    public void restoreAvailability() {
+        try {
+            long available = state.getLong(AVAILABLE_CODE, 0L);
+            if (available > installedVersionCode()) {
+                onAvailability.accept(state.getString(AVAILABLE_NAME, null));
+            } else if (available != 0) {
+                state.edit().remove(AVAILABLE_CODE).remove(AVAILABLE_NAME).apply();
+                onAvailability.accept(null);
+            }
+        } catch (PackageManager.NameNotFoundException error) {
+            android.util.Log.w("KonohaUpdate", "Cannot read installed version", error);
+        }
+    }
+
+    private long installedVersionCode() throws PackageManager.NameNotFoundException {
+        return UpdateInstaller.versionCode(activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0));
+    }
+
     public void checkManually() {
-        if (closed || busy) return;
+        if (closed || (busy && !silentCheck)) return;
         if (readyUpdate != null && readyApk != null && readyApk.isFile()) { showReady(); return; }
         check(false);
     }
 
     public void checkAutomatically() {
+        offerPendingUpdate();
+        if (closed || busy || isShowing()) return;
         long now = System.currentTimeMillis();
-        long previous = state.getLong("last_check", 0);
-        if (!closed && !busy && canPrompt.getAsBoolean() && (now < previous || now - previous >= 24L * 60 * 60 * 1000)) {
+        long previous = state.getLong(LAST_SUCCESS, 0L);
+        boolean needsPendingRestore = pendingUpdate == null && state.getLong(AVAILABLE_CODE, 0L) > 0L;
+        if ((lastFailureElapsed < 0 || SystemClock.elapsedRealtime() - lastFailureElapsed >= RETRY_INTERVAL_MS)
+                && (needsPendingRestore || now < previous || now - previous >= CHECK_INTERVAL_MS)) {
             check(true);
         }
     }
 
+    public void onHomeAvailable() {
+        if (closed || pendingUpdate == null || pendingUpdate.versionCode == autoOfferedCode) return;
+        main.removeCallbacks(offerPending);
+        main.post(offerPending);
+    }
+
+    private void offerPendingUpdate() {
+        if (closed || busy || isShowing() || pendingUpdate == null || pendingUpdate.versionCode == autoOfferedCode
+                || !canPrompt.getAsBoolean()) return;
+        autoOfferedCode = pendingUpdate.versionCode;
+        showAvailable(pendingUpdate);
+    }
+
     private void check(boolean silent) {
         long token = beginRequest();
+        silentCheck = silent;
         GitHubReleaseClient client = request;
         if (!silent) showProgress("Перевірка оновлень…");
-        state.edit().putLong("last_check", System.currentTimeMillis()).apply();
         worker.execute(() -> {
             try {
                 ReleaseUpdate update = client.latest();
-                long current = UpdateInstaller.versionCode(activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0));
+                long current = installedVersionCode();
                 main.post(() -> {
                     if (!active(token)) return;
                     busy = false;
                     dismissDialog();
-                    if (silent && !canPrompt.getAsBoolean()) return;
-                    if (update.versionCode > current) showAvailable(update);
-                    else if (!silent) message("Оновлення", "Встановлено найновішу версію Конохи.");
+                    lastFailureElapsed = -1L;
+                    pendingUpdate = update.versionCode > current ? update : null;
+                    android.content.SharedPreferences.Editor editor =
+                            state.edit().putLong(LAST_SUCCESS, System.currentTimeMillis());
+                    if (pendingUpdate == null) editor.remove(AVAILABLE_CODE).remove(AVAILABLE_NAME);
+                    else editor.putLong(AVAILABLE_CODE, update.versionCode).putString(AVAILABLE_NAME, update.versionName);
+                    editor.apply();
+                    onAvailability.accept(pendingUpdate == null ? null : update.versionName);
+                    if (silent) offerPendingUpdate();
+                    else if (pendingUpdate != null) {
+                        autoOfferedCode = update.versionCode;
+                        showAvailable(update);
+                    } else message("Оновлення", "Встановлено найновішу версію Конохи.");
                 });
             } catch (Exception error) { reportError(token, error, silent); }
         });
@@ -86,6 +151,7 @@ public final class UpdateController {
         if (request != null) request.cancel();
         request = clients.get();
         busy = true;
+        silentCheck = false;
         return ++generation;
     }
 
@@ -180,6 +246,7 @@ public final class UpdateController {
             dismissDialog();
             readyUpdate = null;
             readyApk = null;
+            if (silent) lastFailureElapsed = SystemClock.elapsedRealtime();
             String detail = error.getMessage();
             if (!silent) message("Оновлення не виконано", error instanceof java.io.IOException
                     && detail != null && !detail.contains("http") ? detail
@@ -197,6 +264,7 @@ public final class UpdateController {
     private void dismissDialog() { if (dialog != null) { dialog.dismiss(); dialog = null; } }
 
     public void cancel() {
+        main.removeCallbacks(offerPending);
         generation++;
         busy = false;
         if (request != null) request.cancel();

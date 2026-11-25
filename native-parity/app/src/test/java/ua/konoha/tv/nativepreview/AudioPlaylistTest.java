@@ -40,11 +40,13 @@ public class AudioPlaylistTest {
             Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(1200));
             MediaPlayer original = field(audio, "musicPlayer");
             assertTrue(original.isPlaying());
+            assertEquals(7800L, audio.millisecondsUntilNextTrack(), 80L);
             Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(9150));
             MediaPlayer next = field(audio, "musicPlayer");
             assertNotSame(original, next);
             assertSame(original, field(audio, "overlapPlayer"));
             assertEquals(second, field(audio, "currentMusicTrackId"));
+            assertTrue(audio.millisecondsUntilNextTrack() < 9000L);
             assertEquals(first, prefs.getMusicTrack());
             assertTrue(next.isPlaying());
             float volume = prefs.getMusicVolume();
@@ -61,6 +63,7 @@ public class AudioPlaylistTest {
 
             prefs.setMusicRotationEnabled(false);
             audio.updateMusic();
+            assertEquals(-1L, audio.millisecondsUntilNextTrack());
             Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(1500));
             assertEquals(first, field(audio, "currentMusicTrackId"));
             assertEquals(first, prefs.getMusicTrack());

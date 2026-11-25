@@ -7,13 +7,16 @@ import android.media.MediaPlayer;
 import android.media.SoundPool;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 
+import ua.konoha.tv.nativepreview.game.RunnerCue;
 import ua.konoha.tv.nativepreview.model.CatalogData;
 import ua.konoha.tv.nativepreview.model.HighlightSound;
 import ua.konoha.tv.nativepreview.prefs.PreferencesManager;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 
 public class AudioController {
@@ -55,6 +58,9 @@ public class AudioController {
     private long launchGeneration = 0;
 
     private int activeFocusStreamId = 0;
+    private final Map<RunnerCue, Integer> runnerStreams = new EnumMap<>(RunnerCue.class);
+    private RunnerCue pendingRunnerCue;
+    private long pendingRunnerCueUntil;
 
     public AudioController(Context context, PreferencesManager prefs) {
         this.context = context.getApplicationContext();
@@ -73,8 +79,14 @@ public class AudioController {
                 .build();
 
         soundPool.setOnLoadCompleteListener((pool, sampleId, status) -> {
-            if (status == 0) {
+            synchronized (AudioController.this) {
+                if (disposed || status != 0) return;
                 loadedSounds.put(sampleId, true);
+                RunnerCue cue = pendingRunnerCue;
+                if (cue != null && Integer.valueOf(sampleId).equals(soundMap.get("runner_" + cue.assetName))) {
+                    pendingRunnerCue = null;
+                    if (SystemClock.uptimeMillis() <= pendingRunnerCueUntil) playRunnerSound(cue);
+                }
             }
         });
 
@@ -120,10 +132,58 @@ public class AudioController {
         }
     }
 
+    public synchronized void prepareRunnerSounds() {
+        if (disposed || !prefs.isAudioEnabled()) return;
+        for (RunnerCue cue : RunnerCue.values()) {
+            String key = "runner_" + cue.assetName;
+            if (!soundMap.containsKey(key)) loadSound(key, "audio/runner/" + cue.assetName + ".wav");
+        }
+    }
+
+    public synchronized void playRunnerSound(RunnerCue cue) {
+        if (disposed || !prefs.isAudioEnabled()) return;
+        Integer sample = soundMap.get("runner_" + cue.assetName);
+        if (sample == null) return;
+        if (!Boolean.TRUE.equals(loadedSounds.get(sample))) {
+            if (cue == RunnerCue.START) {
+                pendingRunnerCue = cue;
+                pendingRunnerCueUntil = SystemClock.uptimeMillis() + 350;
+            }
+            return;
+        }
+        Integer previous = runnerStreams.remove(cue);
+        if (previous != null) soundPool.stop(previous);
+        float volume = prefs.getVolume() * 0.65f;
+        int stream = soundPool.play(sample, volume, volume, 1, 0, 1f);
+        if (stream != 0) runnerStreams.put(cue, stream);
+    }
+
+    public synchronized void stopRunnerSounds() {
+        pendingRunnerCue = null;
+        if (soundPool != null) {
+            for (int stream : runnerStreams.values()) soundPool.stop(stream);
+        }
+        runnerStreams.clear();
+    }
+
     // --- Підсистема музики з явним життєвим циклом, crossfade та 3.5с перекриттям циклу ---
 
     public synchronized MusicState getMusicState() {
         return musicState;
+    }
+
+    public synchronized long millisecondsUntilNextTrack() {
+        if (!rotateMusic || musicState != MusicState.PLAYING || musicPlayer == null || isMusicPaused) return -1L;
+        try {
+            int duration = musicPlayer.getDuration();
+            return Math.max(0, duration - overlapDuration(duration) - musicPlayer.getCurrentPosition());
+        } catch (IllegalStateException unavailable) {
+            return -1L;
+        }
+    }
+
+    private static int overlapDuration(int duration) {
+        return duration > 8000 ? Math.min(3500, duration / 4) : 0;
     }
 
     public synchronized void updateMusic() {
@@ -282,8 +342,8 @@ public class AudioController {
         }
         try {
             int duration = mp.getDuration();
-            if (duration <= 8000) return;
-            final int fadeMs = Math.min(3500, duration / 4);
+            final int fadeMs = overlapDuration(duration);
+            if (fadeMs == 0) return;
             int triggerMs = duration - fadeMs;
             int currentPos = 0;
             try { currentPos = mp.getCurrentPosition(); } catch (Exception ignored) {}

@@ -10,8 +10,8 @@ android {
         applicationId 'ua.konoha.tv.nativeparity'
         minSdk 26
         targetSdk 34
-        versionCode 7
-        versionName '1.1.5'
+        versionCode 8
+        versionName '1.1.6'
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
 

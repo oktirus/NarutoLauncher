@@ -98,6 +98,46 @@ public class LauncherRegressionTest {
         assertSame(panel, field(activity, "activePanel"));
     }
 
+    @Test public void remoteReachesAndTogglesResourcesBetweenTheAboutActions() throws Exception {
+        MainActivity activity = start();
+        call(activity, "openSettings");
+        SettingsPanel panel = field(activity, "settingsPanel");
+        ((View) findText(panel, "Про Коноху та ресурси").getParent()).performClick();
+        layout(activity);
+        View update = (View) findText(panel, "Оновлення Конохи").getParent();
+        View label = findText(panel, "Показувати CPU та RAM");
+        KonohaSwitch toggle = findView((View) label.getParent().getParent(), KonohaSwitch.class);
+        View about = (View) findText(panel, "Про застосунок").getParent();
+        assertTrue(update.requestFocusFromTouch());
+        assertSame(toggle, update.focusSearch(View.FOCUS_DOWN));
+        assertTrue(toggle.requestFocus());
+        activity.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_CENTER));
+        activity.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_CENTER));
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertTrue(((PreferencesManager) field(activity, "prefs")).shouldShowResources());
+        assertSame(about, toggle.focusSearch(View.FOCUS_DOWN));
+        assertSame(toggle, about.focusSearch(View.FOCUS_UP));
+    }
+
+    @Test public void quietMomentDoesNotPlayTheUiOrFocusCue() throws Exception {
+        MainActivity activity = start();
+        AudioController original = field(activity, "audioController");
+        RecordingAudio audio = new RecordingAudio(activity, field(activity, "prefs"));
+        java.lang.reflect.Field audioField = MainActivity.class.getDeclaredField("audioController");
+        audioField.setAccessible(true);
+        audioField.set(activity, audio);
+        original.release();
+        call(activity, "openSettings");
+        SettingsPanel panel = field(activity, "settingsPanel");
+        View quiet = (View) findText(panel, "Тиха мить").getParent();
+        audio.uiSounds = 0;
+        assertTrue(quiet.performClick());
+        assertEquals(View.VISIBLE, ((View) field(activity, "ambientOverlay")).getVisibility());
+        assertEquals(0, audio.uiSounds);
+        assertEquals(0, audio.focusSounds);
+        assertFalse(quiet.isSoundEffectsEnabled());
+    }
+
     @Test public void homeIntentClosesCurrentPanel() throws Exception {
         MainActivity activity = start();
         call(activity, "openGame");
@@ -329,6 +369,21 @@ public class LauncherRegressionTest {
         assertEquals("running", physics.status);
     }
 
+    @Test public void runnerPlaysItsOwnCuesAndStopsThemWhenPaused() throws Exception {
+        MainActivity activity = start();
+        call(activity, "openGame");
+        RunnerGameView game = field(activity, "runnerGameView");
+        List<ua.konoha.tv.nativepreview.game.RunnerCue> cues = new ArrayList<>();
+        java.util.concurrent.atomic.AtomicInteger stops = new java.util.concurrent.atomic.AtomicInteger();
+        game.setSoundCallbacks(cues::add, stops::incrementAndGet);
+        game.startGame();
+        game.jump();
+        game.pauseGame();
+        assertEquals(List.of(ua.konoha.tv.nativepreview.game.RunnerCue.START,
+                ua.konoha.tv.nativepreview.game.RunnerCue.JUMP), cues);
+        assertEquals(1, stops.get());
+    }
+
     @Test public void audioToggleRefreshesMusic() throws Exception {
         MainActivity activity = start();
         PreferencesManager prefs = field(activity, "prefs");
@@ -368,6 +423,32 @@ public class LauncherRegressionTest {
 
     private static void openAudioSettings(SettingsPanel panel) {
         assertTrue(((View) findText(panel, "Звук і музика").getParent()).performClick());
+    }
+
+    @Test public void audioMenuCountsDownToTheNextTrackAboveBothPreviewButtons() throws Exception {
+        MainActivity activity = start();
+        PreferencesManager prefs = field(activity, "prefs");
+        prefs.setMusicRotationEnabled(true);
+        AudioController original = field(activity, "audioController");
+        RecordingAudio audio = new RecordingAudio(activity, prefs);
+        audio.remainingMusicMillis = 26500;
+        java.lang.reflect.Field audioField = MainActivity.class.getDeclaredField("audioController");
+        audioField.setAccessible(true);
+        audioField.set(activity, audio);
+        original.release();
+
+        call(activity, "openSettings");
+        SettingsPanel panel = field(activity, "settingsPanel");
+        openAudioSettings(panel);
+        layout(activity);
+        assertNotNull(findText(panel, "Наступний трек через 0:27"));
+        audio.remainingMusicMillis = 23900;
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(500));
+        assertNotNull(findText(panel, "Наступний трек через 0:24"));
+        LinearLayout rows = field(panel, "content");
+        int count = rows.getChildCount();
+        assertSame(findText(panel, "Прослухати звук виділення"), rows.getChildAt(count - 2));
+        assertSame(findText(panel, "Використати:"), rows.getChildAt(count - 1));
     }
 
     @Test public void libraryFocusTargetsAnAuraAroundTheCard() throws Exception {
@@ -511,11 +592,14 @@ public class LauncherRegressionTest {
     private static class RecordingAudio extends AudioController {
         int musicUpdates;
         int focusSounds;
+        int uiSounds;
+        long remainingMusicMillis = -1L;
         String previewTechnique;
         RecordingAudio(Context context, PreferencesManager prefs) { super(context, prefs); }
         @Override public synchronized void updateMusic() { musicUpdates++; }
-        @Override public synchronized void playUiSound() {}
+        @Override public synchronized void playUiSound() { uiSounds++; }
         @Override public synchronized void playFocusSound() { focusSounds++; }
+        @Override public synchronized long millisecondsUntilNextTrack() { return remainingMusicMillis; }
         public synchronized boolean playTechniquePreview(String id) { previewTechnique = id; return true; }
     }
 

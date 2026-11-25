@@ -8,9 +8,11 @@ import android.view.View;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.view.accessibility.AccessibilityNodeInfo;
 import ua.konoha.tv.nativepreview.R;
 
+import ua.konoha.tv.nativepreview.game.RunnerCue;
 import ua.konoha.tv.nativepreview.game.RunnerPhysics;
 import ua.konoha.tv.nativepreview.prefs.PreferencesManager;
 import ua.konoha.tv.nativepreview.theme.KonohaTheme;
@@ -18,6 +20,7 @@ import ua.konoha.tv.nativepreview.theme.KonohaTheme;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Runner game stage and view reproducing Chromium's "Шлях шинобі".
@@ -45,9 +48,16 @@ public class RunnerGameView extends View {
     private final RectF closeButton = new RectF();
     private final RectF slideButton = new RectF();
     private final RectF jumpButton = new RectF();
+    private final RectF world = new RectF(0, 0, (float) RunnerPhysics.W, (float) RunnerPhysics.H);
+    private final LinearGradient roadShade = new LinearGradient(0, (float) RunnerPhysics.GROUND,
+            0, (float) RunnerPhysics.H, 0xff9c8051, 0xff594531, Shader.TileMode.CLAMP);
+    private float scoreLeft;
+    private float bestLeft;
+    private float scoreTop;
 
     private Runnable onExitListener;
-    private Runnable onSoundListener;
+    private Consumer<RunnerCue> onSoundListener;
+    private Runnable onStopSounds;
 
     private long lastTime = 0;
     private boolean isPausedByLifecycle = false;
@@ -57,19 +67,24 @@ public class RunnerGameView extends View {
         public void run() {
             if ("running".equals(runner.status) && !isPausedByLifecycle && isAttachedToWindow()
                     && getWindowVisibility() == VISIBLE && isShown()) {
-                long now = System.currentTimeMillis();
+                long now = SystemClock.uptimeMillis();
                 double dt = lastTime > 0 ? (now - lastTime) / 1000.0 : 0.016;
                 if (dt > 0.05) dt = 0.05;
                 lastTime = now;
 
-                String before = runner.status;
+                boolean airborne = runner.y > 0.0;
+                int clearedBefore = runner.cleared;
                 runner.step(dt);
-                if ("running".equals(before) && "over".equals(runner.status)) {
+                if ("over".equals(runner.status)) {
                     saveBestScore();
-                    if (onSoundListener != null) onSoundListener.run();
+                    stopSounds();
+                    playSound(RunnerCue.HIT);
+                } else {
+                    if (airborne && runner.y == 0.0) playSound(RunnerCue.LAND);
+                    if (runner.cleared > clearedBefore) playSound(RunnerCue.CLEAR);
                 }
                 invalidate();
-                postDelayed(this, 16);
+                if ("running".equals(runner.status)) postDelayed(this, 16);
             }
         }
     };
@@ -93,8 +108,19 @@ public class RunnerGameView extends View {
         this.onExitListener = listener;
     }
 
-    public void setOnSoundListener(Runnable listener) {
-        this.onSoundListener = listener;
+    public void setSoundCallbacks(Consumer<RunnerCue> play, Runnable stop) {
+        this.onSoundListener = play;
+        this.onStopSounds = stop;
+    }
+
+    private void playSound(RunnerCue cue) {
+        if (!disposed && !isPausedByLifecycle && isAttachedToWindow() && onSoundListener != null) {
+            onSoundListener.accept(cue);
+        }
+    }
+
+    private void stopSounds() {
+        if (onStopSounds != null) onStopSounds.run();
     }
 
     private void loadBitmaps() {
@@ -145,9 +171,10 @@ public class RunnerGameView extends View {
     public void startGame() {
         if ("running".equals(runner.status)) return;
         runner.start();
-        lastTime = System.currentTimeMillis();
+        lastTime = SystemClock.uptimeMillis();
         removeCallbacks(tickRunnable);
         post(tickRunnable);
+        playSound(RunnerCue.START);
         invalidate();
     }
 
@@ -157,6 +184,7 @@ public class RunnerGameView extends View {
             removeCallbacks(tickRunnable);
             invalidate();
         }
+        stopSounds();
     }
 
     public void togglePause() {
@@ -173,13 +201,16 @@ public class RunnerGameView extends View {
             startGame();
             return;
         }
-        runner.jump();
+        boolean fromGround = runner.y == 0.0;
+        if (runner.jump() && fromGround) playSound(RunnerCue.JUMP);
         invalidate();
     }
 
     public void crouch() {
         if ("running".equals(runner.status)) {
+            boolean startsMove = runner.y > 0.0 ? runner.vy < 400.0 : runner.duck == 0.0;
             runner.crouch();
+            if (startsMove) playSound(RunnerCue.SLIDE);
             invalidate();
         }
     }
@@ -188,6 +219,7 @@ public class RunnerGameView extends View {
         saveBestScore();
         if (!"gamabunta".equals(hero)) hero = "naruto";
         if (hero.equals(runner.hero)) return;
+        stopSounds();
         String oldHero = runner.hero;
         bitmapGeneration++;
         bitmapExecutor.getQueue().clear();
@@ -229,6 +261,9 @@ public class RunnerGameView extends View {
 
     public void release() {
         saveBestScore();
+        stopSounds();
+        onSoundListener = null;
+        onStopSounds = null;
         isPausedByLifecycle = true;
         disposed = true;
         clearCache();
@@ -248,6 +283,7 @@ public class RunnerGameView extends View {
 
     @Override protected void onDetachedFromWindow() {
         removeCallbacks(tickRunnable);
+        stopSounds();
         super.onDetachedFromWindow();
     }
 
@@ -289,23 +325,45 @@ public class RunnerGameView extends View {
     }
 
     private void updateControlBounds(int w, int h) {
+        float inset = KonohaTheme.dp(getContext(), 24);
+        float gap = KonohaTheme.dp(getContext(), 8);
+        float right = w - inset;
         float tabY = KonohaTheme.dp(getContext(), 52);
         float tabBottom = tabY + KonohaTheme.dp(getContext(), 28);
-        narutoTab.set(KonohaTheme.dp(getContext(), 24), tabY,
-                KonohaTheme.dp(getContext(), 108), tabBottom);
-        gamabuntaTab.set(KonohaTheme.dp(getContext(), 114), tabY,
-                KonohaTheme.dp(getContext(), 218), tabBottom);
-        pauseButton.set(w - KonohaTheme.dp(getContext(), 100), tabY,
-                w - KonohaTheme.dp(getContext(), 26), tabBottom);
-        closeButton.set(w - KonohaTheme.dp(getContext(), 36), KonohaTheme.dp(getContext(), 4),
-                w, KonohaTheme.dp(getContext(), 44));
-        float footY = h - KonohaTheme.dp(getContext(), 18);
-        float footTop = footY - KonohaTheme.dp(getContext(), 16);
-        float footBottom = footTop + KonohaTheme.dp(getContext(), 24);
-        slideButton.set(w - KonohaTheme.dp(getContext(), 190), footTop,
-                w - KonohaTheme.dp(getContext(), 110), footBottom);
-        jumpButton.set(w - KonohaTheme.dp(getContext(), 100), footTop,
-                w - KonohaTheme.dp(getContext(), 20), footBottom);
+        pauseButton.set(right - KonohaTheme.dp(getContext(), 80), tabY, right, tabBottom);
+        float tabWidth = Math.max(0, pauseButton.left - inset - 2 * gap);
+        float narutoWidth = Math.min(KonohaTheme.dp(getContext(), 84), tabWidth * 0.45f);
+        float gamabuntaWidth = Math.min(KonohaTheme.dp(getContext(), 104), tabWidth - narutoWidth);
+        narutoTab.set(inset, tabY, inset + narutoWidth, tabBottom);
+        gamabuntaTab.set(narutoTab.right + gap, tabY, narutoTab.right + gap + gamabuntaWidth, tabBottom);
+        float closeSize = KonohaTheme.dp(getContext(), 36);
+        closeButton.set(right - closeSize, KonohaTheme.dp(getContext(), 8), right,
+                KonohaTheme.dp(getContext(), 8) + closeSize);
+        float scoreWidth = KonohaTheme.dp(getContext(), 78);
+        bestLeft = pauseButton.left - gap - scoreWidth;
+        scoreLeft = bestLeft - scoreWidth;
+        boolean compact = scoreLeft < gamabuntaTab.right + gap;
+        scoreTop = tabY;
+        if (compact) {
+            scoreLeft = inset;
+            bestLeft = scoreLeft + scoreWidth;
+            scoreTop = tabBottom + gap;
+        }
+        float headerBottom = Math.max(tabBottom, scoreTop + KonohaTheme.dp(getContext(), 31));
+        float footBottom = h - KonohaTheme.dp(getContext(), 12);
+        float footTop = footBottom - KonohaTheme.dp(getContext(), 28);
+        float actionWidth = KonohaTheme.dp(getContext(), 86);
+        jumpButton.set(right - actionWidth, footTop, right, footBottom);
+        slideButton.set(jumpButton.left - gap - actionWidth, footTop, jumpButton.left - gap, footBottom);
+
+        float top = headerBottom + gap;
+        float height = Math.max(0, footTop - gap - top);
+        float stageWidth = Math.max(0, Math.min(w - 2 * inset,
+                height * (float) (RunnerPhysics.W / RunnerPhysics.H)));
+        float stageHeight = stageWidth * (float) (RunnerPhysics.H / RunnerPhysics.W);
+        float stageLeft = (w - stageWidth) / 2f;
+        float stageTop = top + (height - stageHeight) / 2f;
+        stageRect.set(stageLeft, stageTop, stageLeft + stageWidth, stageTop + stageHeight);
     }
 
     @Override
@@ -377,37 +435,20 @@ public class RunnerGameView extends View {
         int w = getWidth();
         int h = getHeight();
         if (w == 0 || h == 0) return;
-        updateControlBounds(w, h);
-
         // Dark background
+        paint.setStyle(Paint.Style.FILL);
         paint.setColor(KonohaTheme.COLOR_BG);
         canvas.drawRect(0, 0, w, h, paint);
 
         // Header toolbar:
-        renderHeader(canvas, w);
-
-        // Compute 1280x540 aspect stage rect
-        float topH = KonohaTheme.dp(getContext(), 84);
-        float bottomH = KonohaTheme.dp(getContext(), 56);
-        float availH = h - topH - bottomH;
-        float availW = w - KonohaTheme.dp(getContext(), 48);
-
-        float stageW = availW;
-        float stageH = stageW * (540f / 1280f);
-        if (stageH > availH) {
-            stageH = availH;
-            stageW = stageH * (1280f / 540f);
-        }
-
-        float stageLeft = (w - stageW) / 2f;
-        float stageTop = topH + (availH - stageH) / 2f;
-        stageRect.set(stageLeft, stageTop, stageLeft + stageW, stageTop + stageH);
+        renderHeader(canvas);
+        if (stageRect.isEmpty()) return;
 
         // Render Stage
         canvas.save();
         canvas.clipRect(stageRect);
-        canvas.translate(stageLeft, stageTop);
-        float scale = stageW / (float) RunnerPhysics.W;
+        canvas.translate(stageRect.left, stageRect.top);
+        float scale = stageRect.width() / (float) RunnerPhysics.W;
         canvas.scale(scale, scale);
 
         renderGameContent(canvas);
@@ -422,10 +463,10 @@ public class RunnerGameView extends View {
         canvas.drawRect(stageRect, framePaint);
 
         // Footer
-        renderFooter(canvas, w, h);
+        renderFooter(canvas);
     }
 
-    private void renderHeader(Canvas canvas, int w) {
+    private void renderHeader(Canvas canvas) {
         // Title: Шлях шинобі
         paint.reset();
         paint.setAntiAlias(true);
@@ -436,8 +477,6 @@ public class RunnerGameView extends View {
 
         // Hero Tabs: [ Наруто ] [ Гамабунта ]
         boolean isNaruto = "naruto".equals(runner.hero);
-        float tabY = KonohaTheme.dp(getContext(), 52);
-
         drawHeroTab(canvas, narutoTab.left, narutoTab.top, narutoTab.width(), narutoTab.height(), "Наруто", isNaruto);
         drawHeroTab(canvas, gamabuntaTab.left, gamabuntaTab.top, gamabuntaTab.width(), gamabuntaTab.height(), "Гамабунта", !isNaruto);
 
@@ -445,19 +484,25 @@ public class RunnerGameView extends View {
         paint.setTypeface(KonohaTheme.getNunitoBold(getContext()));
         paint.setTextSize(KonohaTheme.dp(getContext(), 11));
         paint.setColor(Color.parseColor("#9eb1b8"));
-        canvas.drawText("Шлях", w - KonohaTheme.dp(getContext(), 320), tabY + 8, paint);
-        canvas.drawText("Рекорд", w - KonohaTheme.dp(getContext(), 200), tabY + 8, paint);
+        float labelBaseline = scoreTop + KonohaTheme.dp(getContext(), 10);
+        canvas.drawText("Шлях", scoreLeft, labelBaseline, paint);
+        canvas.drawText("Рекорд", bestLeft, labelBaseline, paint);
 
         paint.setTextSize(KonohaTheme.dp(getContext(), 18));
         paint.setColor(KonohaTheme.COLOR_PAPER);
         String scoreStr = String.format(java.util.Locale.ROOT, "%05d", runner.getScore());
         String bestStr = String.format(java.util.Locale.ROOT, "%05d", Math.max(runner.getScore(), prefs.getRunnerBest(runner.hero)));
-        canvas.drawText(scoreStr, w - KonohaTheme.dp(getContext(), 320), tabY + 26, paint);
-        canvas.drawText(bestStr, w - KonohaTheme.dp(getContext(), 200), tabY + 26, paint);
+        float valueBaseline = scoreTop + KonohaTheme.dp(getContext(), 28);
+        canvas.drawText(scoreStr, scoreLeft, valueBaseline, paint);
+        canvas.drawText(bestStr, bestLeft, valueBaseline, paint);
 
         // Pause button
-        drawPillButton(canvas, pauseButton.left, pauseButton.top, pauseButton.width(), pauseButton.height(),
-                "running".equals(runner.status) ? "⏸ Пауза" : "▶ Старт");
+        String pauseLabel = switch (runner.status) {
+            case "running" -> "Пауза";
+            case "paused" -> "Продовжити";
+            default -> "Старт";
+        };
+        drawPillButton(canvas, pauseButton.left, pauseButton.top, pauseButton.width(), pauseButton.height(), pauseLabel);
 
         // Close button 'x'
         paint.setColor(KonohaTheme.COLOR_PAPER);
@@ -484,6 +529,7 @@ public class RunnerGameView extends View {
         paint.setColor(active ? Color.parseColor("#102b38") : KonohaTheme.COLOR_PAPER);
         paint.setTypeface(KonohaTheme.getNunitoBold(getContext()));
         paint.setTextSize(KonohaTheme.dp(getContext(), 12));
+        paint.setStyle(Paint.Style.FILL);
         paint.setTextAlign(Paint.Align.CENTER);
         canvas.drawText(text, x + w / 2f, y + h * 0.68f, paint);
         paint.setTextAlign(Paint.Align.LEFT);
@@ -579,12 +625,22 @@ public class RunnerGameView extends View {
         paint.setTextAlign(Paint.Align.LEFT);
     }
 
-    private void renderFooter(Canvas canvas, int w, int h) {
-        float footY = h - KonohaTheme.dp(getContext(), 18);
+    private void renderFooter(Canvas canvas) {
+        float left = KonohaTheme.dp(getContext(), 24);
+        String hint = "ready".equals(runner.status)
+                ? "← → герой  ·  OK почати" : "Menu — пауза  ·  Back — вихід";
         paint.setTypeface(KonohaTheme.getNunito(getContext()));
         paint.setTextSize(KonohaTheme.dp(getContext(), 12));
         paint.setColor(Color.parseColor("#afc1b7"));
-        canvas.drawText("Обери героя й починай тренування.", KonohaTheme.dp(getContext(), 24), footY, paint);
+        paint.setTextAlign(Paint.Align.LEFT);
+        float maxWidth = slideButton.left - left - KonohaTheme.dp(getContext(), 8);
+        if (paint.measureText(hint) > maxWidth) {
+            hint = "ready".equals(runner.status) ? "OK — почати" : "Menu — пауза";
+        }
+        if (paint.measureText(hint) <= maxWidth) {
+            float baseline = slideButton.centerY() - (paint.ascent() + paint.descent()) / 2f;
+            canvas.drawText(hint, left, baseline, paint);
+        }
 
         drawPillButton(canvas, slideButton.left, slideButton.top, slideButton.width(), slideButton.height(), "↓ Підкат");
         drawPillButton(canvas, jumpButton.left, jumpButton.top, jumpButton.width(), jumpButton.height(), "↑ Стрибок");
@@ -592,29 +648,17 @@ public class RunnerGameView extends View {
 
     private void renderGameContent(Canvas canvas) {
         // 1. Forest background
+        paint.setStyle(Paint.Style.FILL);
+        paint.setAlpha(255);
         Bitmap bg = bitmaps.get("forest");
         if (bg != null && !bg.isRecycled()) {
-            canvas.drawBitmap(bg, null, new RectF(0, 0, (float) RunnerPhysics.W, (float) RunnerPhysics.H), paint);
+            canvas.drawBitmap(bg, null, world, paint);
         } else {
             paint.setColor(Color.parseColor("#425957"));
             canvas.drawRect(0, 0, (float) RunnerPhysics.W, (float) RunnerPhysics.H, paint);
         }
 
-        // 2. Road
-        paint.setColor(Color.parseColor("#977948"));
-        canvas.drawRect(0, (float) RunnerPhysics.GROUND, (float) RunnerPhysics.W, (float) RunnerPhysics.H, paint);
-        paint.setColor(Color.parseColor("#dac18c"));
-        canvas.drawRect(0, (float) RunnerPhysics.GROUND, (float) RunnerPhysics.W, (float) RunnerPhysics.GROUND + 4, paint);
-
-        // Road texture dashes
-        paint.setColor(Color.parseColor("#342d25"));
-        paint.setAlpha(120);
-        double d = runner.distance;
-        for (int k = 0; k < 40; k++) {
-            float x = (float) (((k * 91 - d * 1.02) % RunnerPhysics.W + RunnerPhysics.W) % RunnerPhysics.W);
-            float y = (float) (RunnerPhysics.GROUND + 15 + (k % 4) * 21);
-            canvas.drawRect(x, y, x + 16, y + 2, paint);
-        }
+        renderTrail(canvas);
 
         // 3. Obstacles
         for (RunnerPhysics.Obstacle o : runner.obstacles) {
@@ -667,6 +711,56 @@ public class RunnerGameView extends View {
                 canvas.drawCircle(px, py, (float) (3 + age * 5), paint);
             }
         }
+    }
+
+    private void renderTrail(Canvas canvas) {
+        float ground = (float) RunnerPhysics.GROUND;
+        double distance = runner.distance;
+        // Small lanterns and leaves sit behind the collision line.
+        for (int i = 0; i < 4; i++) {
+            float x = trailPosition(107 + i * 320, distance * 0.56);
+            float top = ground - 44f - (i % 2) * 12f;
+            paint.setColor(0xff493f2d);
+            canvas.drawRect(x - 2, top, x + 2, ground, paint);
+            paint.setColor(0x33f4ae5a);
+            canvas.drawCircle(x, top, 15, paint);
+            paint.setColor(0xffe7af6c);
+            canvas.drawRoundRect(x - 5, top - 7, x + 5, top + 7, 3, 3, paint);
+            paint.setColor(0xff73583c);
+            canvas.drawRect(x - 6, top - 8, x + 6, top - 5, paint);
+        }
+        for (int i = 0; i < 18; i++) {
+            float x = trailPosition(i * 79 + 17, distance * (0.35 + (i % 3) * 0.13));
+            float y = ground - 28 - (i * 37 % 148)
+                    + (float) Math.sin(runner.elapsed * 1.3 + i) * 5;
+            paint.setColor(i % 2 == 0 ? 0x6ebfba64 : 0x6e87955d);
+            canvas.drawOval(x - 4, y, x + 3, y + 2.8f, paint);
+        }
+
+        paint.setColor(0xffffffff);
+        paint.setShader(roadShade);
+        canvas.drawRect(0, ground, world.right, world.bottom, paint);
+        paint.setShader(null);
+        paint.setColor(0xffdbc496);
+        canvas.drawRect(0, ground, world.right, ground + 3, paint);
+        for (int i = 0; i < 38; i++) {
+            float x = trailPosition(i * 91, distance);
+            float y = ground + 9 + (i * 43 % 81);
+            float width = 3 + (i % 5) * 3;
+            paint.setColor(i % 3 == 0 ? 0x939b916d : 0x86503c2b);
+            canvas.drawOval(x - width, y, x + width, y + 2.6f, paint);
+            if (i % 3 == 0) {
+                paint.setColor(0xff61764d);
+                paint.setStrokeWidth(1.4f);
+                canvas.drawLine(x, ground + 3, x - 4, ground - 6, paint);
+                canvas.drawLine(x, ground + 3, x + 3, ground - 9, paint);
+                canvas.drawLine(x, ground + 3, x + 7, ground - 3, paint);
+            }
+        }
+    }
+
+    private float trailPosition(double position, double offset) {
+        return (float) (((position - offset) % RunnerPhysics.W + RunnerPhysics.W) % RunnerPhysics.W);
     }
 
     private void renderObstacle(Canvas canvas, RunnerPhysics.Obstacle o) {

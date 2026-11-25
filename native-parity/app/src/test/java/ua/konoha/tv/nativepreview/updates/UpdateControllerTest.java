@@ -35,6 +35,8 @@ public class UpdateControllerTest {
     private UpdateController updates;
     private final AtomicInteger clients = new AtomicInteger();
     private final AtomicBoolean canPrompt = new AtomicBoolean(true);
+    private final java.util.concurrent.atomic.AtomicReference<String> available =
+            new java.util.concurrent.atomic.AtomicReference<>();
 
     @Before public void setup() throws Exception {
         activity = Robolectric.buildActivity(Activity.class).setup().visible();
@@ -45,7 +47,7 @@ public class UpdateControllerTest {
         Shadows.shadowOf(installedApp.getPackageManager()).installPackage(installed);
         byte[] release = UpdateFixtures.release().toString().getBytes(StandardCharsets.UTF_8);
         byte[] manifest = UpdateFixtures.manifest().toString().getBytes(StandardCharsets.UTF_8);
-        updates = new UpdateController(activity.get(), canPrompt::get, () -> {
+        updates = new UpdateController(activity.get(), canPrompt::get, available::set, () -> {
             clients.incrementAndGet();
             return new GitHubReleaseClient(url -> new UpdateFixtures.Response(url,
                     url.toString().equals(UpdateFixtures.API) ? release : manifest, 200));
@@ -101,15 +103,22 @@ public class UpdateControllerTest {
         assertFalse(ShadowAlertDialog.getLatestAlertDialog().isShowing());
     }
 
-    @Test public void automaticCheckIsDailyAndDoesNotStartWhenBlocked() throws Exception {
+    @Test public void automaticCheckFindsTheReleaseBehindSettingsAndOffersItWhenHomeReturns() throws Exception {
         canPrompt.set(false);
         updates.checkAutomatically();
-        assertEquals(0, clients.get());
-        canPrompt.set(true);
-        updates.checkAutomatically();
         finishWorker();
+        assertEquals(1, clients.get());
+        assertEquals("1.2.0", available.get());
+        assertFalse(updates.isShowing());
+        canPrompt.set(true);
+        updates.onHomeAvailable();
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertTrue(updates.isShowing());
+        assertTrue(Shadows.shadowOf(ShadowAlertDialog.getLatestAlertDialog()).getTitle().toString().contains("1.2.0"));
+        ShadowAlertDialog.getLatestAlertDialog().dismiss();
         updates.checkAutomatically();
         assertEquals(1, clients.get());
+        assertFalse(updates.isShowing());
     }
 
     @Test public void silentResponseDoesNotInterruptNewlyOpenedModal() throws Exception {
@@ -117,6 +126,28 @@ public class UpdateControllerTest {
         canPrompt.set(false);
         finishWorker();
         assertFalse(updates.isShowing());
+        assertEquals("1.2.0", available.get());
+    }
+
+    @Test public void failedAutomaticCheckRetriesWithoutUsingTheSuccessInterval() throws Exception {
+        updates.close();
+        byte[] release = UpdateFixtures.release().toString().getBytes(StandardCharsets.UTF_8);
+        byte[] manifest = UpdateFixtures.manifest().toString().getBytes(StandardCharsets.UTF_8);
+        updates = new UpdateController(activity.get(), canPrompt::get, available::set, () -> {
+            int attempt = clients.incrementAndGet();
+            return new GitHubReleaseClient(url -> new UpdateFixtures.Response(url,
+                    url.toString().equals(UpdateFixtures.API) ? release : manifest, attempt == 1 ? 503 : 200));
+        });
+        updates.checkAutomatically();
+        finishWorker();
+        assertNull(available.get());
+        updates.checkAutomatically();
+        assertEquals(1, clients.get());
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMinutes(5));
+        updates.checkAutomatically();
+        finishWorker();
+        assertEquals(2, clients.get());
+        assertEquals("1.2.0", available.get());
     }
 
     private void captureDialog(AlertDialog dialog, String name) throws Exception {
